@@ -169,9 +169,19 @@ syscall(void)
   int num;
   struct proc *curproc = myproc();
 
-  num = curproc->tf->eax;
+
+  num = curproc->tf->eax; // Get syscall number
   if(num > 0 && num < NELEM(syscalls) && syscalls[num]) {
+
+    // Execute system call -> Store return code on eax
     curproc->tf->eax = syscalls[num]();
+
+#ifdef PRINT_SYSCALLS
+
+    cprintf("%s -> %d\n", syscallnames[num], curproc->tf->eax);
+
+#endif // PRINT_SYSCALLS
+
   } else {
     cprintf("%d %s: unknown sys call %d\n",
             curproc->pid, curproc->name, num);
