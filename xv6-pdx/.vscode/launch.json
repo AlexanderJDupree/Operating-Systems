@@ -9,7 +9,7 @@
             "type": "gdb",
             "request": "attach",
             "cwd": "${workspaceFolder}",
-            "executable": "${workspaceFolder}/kernel",
+            "executable": "kernel",
             "target" : ":28007",
             "remote": true,
         }
