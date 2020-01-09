@@ -140,6 +140,7 @@ allocproc(void)
   memset(p->context, 0, sizeof *p->context);
   p->context->eip = (uint)forkret;
 
+  p->start_ticks = ticks;
   return p;
 }
 
@@ -551,6 +552,16 @@ kill(int pid)
 // TODO for Project 2, define procdumpP2() here
 #elif defined(CS333_P1)
 // TODO for Project 1, define procdumpP1() here
+void
+procdumpP1(struct proc* p, const char* state)
+{
+  int elapsed = ticks - p->start_ticks;
+  int seconds = elapsed / 1000;
+  int ms      = elapsed % 1000;
+
+  cprintf("%d\t%s\t     %d.%ds\t%s\t%d\t", p->pid, p->name, seconds, ms, state, p->sz);
+  return;
+}
 #endif
 
 void
@@ -591,8 +602,7 @@ procdump(void)
 #elif defined(CS333_P2)
     procdumpP2(p, state);
 #elif defined(CS333_P1)
-    //procdumpP1(p, state);
-    cprintf("%s\n", state);
+    procdumpP1(p, state);
 #else
     cprintf("%d\t%s\t%s\t", p->pid, p->name, state);
 #endif
