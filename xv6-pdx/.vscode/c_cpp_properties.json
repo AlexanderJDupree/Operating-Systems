@@ -1,15 +1,52 @@
 {
     "configurations": [
         {
-            "name": "Linux",
+            "name": "xv6",
             "includePath": [
-                "${workspaceFolder}"
+                "${workspaceFolder}/**"
             ],
-            "defines": ["PRINT_SYSCALLS=1"],
+            "defines": [
+                "CS333_P1",
+                "PRINT_SYSCALLS",
+                "PDX_XV6"
+            ],
             "compilerPath": "/usr/bin/clang",
             "cStandard": "c11",
             "cppStandard": "c++17",
-            "intelliSenseMode": "gcc-x64"
+            "intelliSenseMode": "clang-x64",
+            "compilerArgs": [
+                "-Wall",
+                "-m32",
+                "-Werror"
+            ],
+            "forcedInclude": [
+                "stat.h",
+                "asm.h",
+                "buf.h",
+                "date.h",
+                "defs.h",
+                "elf.h",
+                "fcntl.h",
+                "file.h",
+                "fs.h",
+                "kbd.h",
+                "memlayout.h",
+                "param.h",
+                "pdx-kernel.h",
+                "pdx.h",
+                "proc.h",
+                "sleeplock.h",
+                "spinlock.h",
+                "stat.h",
+                "syscall.h",
+                "traps.h",
+                "types.h",
+                "user.h",
+                "x86.h"
+            ],
+            "browse": {
+                "limitSymbolsToIncludedHeaders": true
+            }
         }
     ],
     "version": 4

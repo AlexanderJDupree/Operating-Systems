@@ -97,3 +97,23 @@ sys_halt(void)
   return 0;
 }
 #endif // PDX_XV6
+
+
+#ifdef CS333_P1
+
+int
+sys_date(void)
+{
+  struct rtcdate *date;
+
+  // Retrieve user space rtcdate pointer from stack
+  if(argptr(0, (void*)&date, sizeof(struct rtcdate)) < 0)
+    return -1;
+
+  // Mutates the rtcdate object in user space
+  cmostime(date);
+  
+  return 1; // Success
+}
+
+#endif // CS333_P1

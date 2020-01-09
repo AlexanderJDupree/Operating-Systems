@@ -26,6 +26,10 @@ int sleep(int);
 int uptime(void);
 int halt(void);
 
+#ifdef CS333_P1
+int date(struct rtcdate*);
+#endif // CS333_P1
+
 // ulib.c
 int stat(char*, struct stat*);
 char* strcpy(char*, char*);

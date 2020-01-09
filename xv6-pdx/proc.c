@@ -591,7 +591,8 @@ procdump(void)
 #elif defined(CS333_P2)
     procdumpP2(p, state);
 #elif defined(CS333_P1)
-    procdumpP1(p, state);
+    //procdumpP1(p, state);
+    cprintf("%s\n", state);
 #else
     cprintf("%d\t%s\t%s\t", p->pid, p->name, state);
 #endif
