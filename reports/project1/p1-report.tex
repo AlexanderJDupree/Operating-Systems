@@ -138,6 +138,61 @@
   
 \pagebreak
   
+  \noindent\textbf{Test Case:} \emph{With CS333\_P1 turned on, when CS333\_PROJECT is set to 1}
+  
+  \noindent\textbf{Assertions:}
+  \begin{enumerate}[]
+  \item Code correctly compiles
+  \item Kernel boots
+  \item forktest runs to completion correctly
+  \item usertests runs to completion correctly
+  \item The date command prints correct information
+  \item The date command prints information in the correct format
+  \end{enumerate}  
+  
+  \noindent\textbf{Status:} \textcolor{ForestGreen}{\textbf{PASS}}
+  
+  \begin{figure}[h!]
+	\centering
+	\includegraphics[width=1\linewidth]{test4.png}
+	\caption[PRINT\_SYSCALLS=0]{Compilation and Kernel Boot with CS333\_P1 turned on.}
+	\label{fig:P1compileP0-1}
+  \end{figure}
+
+  \begin{figure}[h!]
+	\centering
+	\includegraphics[width=1\linewidth]{test4-cont.png}
+	\caption[PRINT\_SYSCALLS=0]{Execution of usertests from the same session with CS333\_P1 defined.}
+	\label{fig:P1compileP0-1}
+  \end{figure}
+
+  \begin{figure}[h!]
+	\centering
+	\includegraphics[width=1\linewidth]{test4-cont2.png}
+	\caption[PRINT\_SYSCALLS=0]{Results of usertests with output elided and CS333\_P1 defined.}
+	\label{fig:P1compileP0-1}
+  \end{figure}
+
+  \begin{figure}[h!]
+	\centering
+	\includegraphics[width=1\linewidth]{test4-cont3.png}
+	\caption[PRINT\_SYSCALLS=0]{Execution of date command, twice within xv6 and once on host machine.}
+	\label{fig:P1compileP0-1}
+  \end{figure}
+
+\pagebreak
+
+  Figures 6, 7, 8, and 9 present the results of this test case. In figure 6,
+  the command 'grep "CS333\_PROJECT ?= Makefile' shows the the CS333\_PROJECT flag is set to 1.
+  Following that is the command \code{make clean run} which demonstrates that the code correctly 
+  compiles and the kernel boots successfully. Because \code{forktest} is included with 
+  the \code{usertests}, only the user tests were ran, as illustrated in Figure 7. Figure 8 shows
+  that all user tests pass. Figure 9 presents that the date system call is working correctly and 
+  displays the correct information in the correct format. Note that the command \code{date -u} is 
+  issued twice within the xv6 session to demonstrate that the date command provides different timestamps
+  as expected. Also, the \code{date -u} is issued in the host machines terminal as well to prove 
+  that the inormation and format is correct.
+
 \ifdefined \LF
 } % large print end
 \fi
