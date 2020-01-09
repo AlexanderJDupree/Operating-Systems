@@ -17,3 +17,11 @@ mkfs
 .gdbinit
 dist/
 dist-test/
+
+# tex files
+*.aux
+*.fdb_latexmk
+*.fls
+*.log
+*.synctex.gz
+
