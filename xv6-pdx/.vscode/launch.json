@@ -12,6 +12,7 @@
             "executable": "kernel",
             "target" : ":28007",
             "remote": true,
+            "autorun": ["file kernel"],
         }
     ]
 }
