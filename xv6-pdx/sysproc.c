@@ -113,7 +113,7 @@ sys_date(void)
   // Mutates the rtcdate object in user space
   cmostime(date);
   
-  return 1; // Success
+  return 0; // Success
 }
 
 #endif // CS333_P1
