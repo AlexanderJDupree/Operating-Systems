@@ -113,7 +113,7 @@ allocproc(void)
     }
   if (!found) {
     release(&ptable.lock);
-    return 0;
+    return 0; // return NULL
   }
   p->state = EMBRYO;
   p->pid = nextpid++;
@@ -171,6 +171,9 @@ userinit(void)
   safestrcpy(p->name, "initcode", sizeof(p->name));
   p->cwd = namei("/");
 
+  p->uid = ROOT_UID;
+  p->gid = ROOT_GID;
+
   // this assignment to p->state lets other cores
   // run this process. the acquire forces the above
   // writes to be visible, and the lock is also needed
@@ -227,6 +230,10 @@ fork(void)
   np->sz = curproc->sz;
   np->parent = curproc;
   *np->tf = *curproc->tf;
+
+  // Copy UID and GID -- CS333 Project 2
+  np->uid = curproc->uid;
+  np->gid = curproc->gid;
 
   // Clear %eax so that fork returns 0 in the child.
   np->tf->eax = 0;
@@ -550,6 +557,16 @@ kill(int pid)
 // TODO for Project 3, define procdumpP3() here
 #elif defined(CS333_P2)
 // TODO for Project 2, define procdumpP2() here
+void
+procdumpP2(struct proc* p, const char* state)
+{
+  int elapsed = ticks - p->start_ticks;
+  int seconds = elapsed / 1000;
+  int ms      = elapsed % 1000;
+
+  cprintf("%d\t%s\t     %d.%ds\t%s\t%d\t", p->pid, p->name, seconds, ms, state, p->sz);
+  return;
+}
 #elif defined(CS333_P1)
 // TODO for Project 1, define procdumpP1() here
 void
