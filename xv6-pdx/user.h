@@ -30,6 +30,15 @@ int halt(void);
 int date(struct rtcdate*);
 #endif // CS333_P1
 
+#ifdef CS333_P2
+uint getuid(void);
+uint getgid(void);
+uint getppid(void);
+
+int setuid(int);
+int setgid(int);
+#endif // CS333_P2
+
 // ulib.c
 int stat(char*, struct stat*);
 char* strcpy(char*, char*);

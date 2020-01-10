@@ -117,3 +117,49 @@ sys_date(void)
 }
 
 #endif // CS333_P1
+
+#ifdef CS333_P2
+
+uint
+sys_getuid(void)
+{
+  return myproc()->uid;
+}
+
+uint
+sys_getgid(void)
+{
+  return myproc()->pid;
+}
+
+uint
+sys_getppid(void)
+{
+  return myproc()->parent->pid;
+}
+
+int
+sys_setuid(void)
+{
+  int uid;
+
+  // Get argument off the stack
+  if(argint(0, &uid) < 0)
+    return -1;
+
+  return myproc()->uid = uid;
+}
+
+int
+sys_setgid(void)
+{
+  int gid;
+
+  // Get argument off the stack
+  if(argint(0, &gid) < 0)
+    return -1;
+
+  return myproc()->gid = gid;
+}
+
+#endif //CS333_P2
