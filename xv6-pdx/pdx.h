@@ -6,6 +6,9 @@
 #ifndef PDX_INCLUDE
 #define PDX_INCLUDE
 
+#define ROOT_UID 0
+#define ROOT_GID 0
+
 #define TRUE 1
 #define FALSE 0
 #define RETURN_SUCCESS 0
