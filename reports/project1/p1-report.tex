@@ -88,7 +88,7 @@
 
   The command \code{grep "PRINT\_SYSCALLS ?=" Makefile} shows that the PRINT\_SYSCALLS macro is indeed turned on.
   The following command \code{make clean run} demonstrates that the code correctly compiles and the output displays
-  trace information for the system calls. The system call trace in Figure 2 is the boot sequence for the xv6 system.
+  trace information for the system calls. The system call trace in Figure 2 matches the trace in the project description, which means that this is the correct call trace on boot.
   Furthermore, it should be noted that the timestamps for each command was performed within 10 seconds of each other.
 
   \pagebreak
@@ -191,7 +191,41 @@
   displays the correct information in the correct format. Note that the command \code{date -u} is 
   issued twice within the xv6 session to demonstrate that the date command provides different timestamps
   as expected. Also, the \code{date -u} is issued in the host machines terminal as well to prove 
-  that the inormation and format is correct.
+  that the inormation and format is correct. Furthermore, the timestamps from each date call is 
+  different and are done over a span of 15 seconds. 
+
+\pagebreak
+
+  \section*{Control-P}
+  This section presents tests related to the Control-P console interrupt 
+  and process information dump. Test cases follow closely those outlined in the 
+  rubric. \hfill \break
+
+  \noindent\textbf{Test Case:} \emph{Issuing control sequence 'Control-P' at runtime}
+  
+  \noindent\textbf{Assertions:}
+  \begin{enumerate}[]
+  \item Correct header displayed
+  \item Output is aligned with header
+  \item Correct and updated data is displayed
+  \end{enumerate}  
+  
+  \noindent\textbf{Status:} \textcolor{ForestGreen}{\textbf{PASS}} \hfill \break
+  
+  \begin{figure}[h!]
+	\centering
+	\includegraphics[width=\linewidth]{test5.png}
+	\caption[PRINT\_SYSCALLS=0]{Compilation and Boot call trace with PRINT\_SYSCALLS set to 1.}
+	\label{fig:P1compileP0-1}
+  \end{figure}
+
+  First, we can see that the header presented in Figure 10 displays the required fields
+  outlined in the project description. The data displayed is aligned with the correct fields
+  and is correct for the system. As expected, the init process is the oldest process, 
+  and succesive uses of 'control-p' shows the elapsed time to be increasing for all processes. 
+
+
+  \pagebreak
 
 \ifdefined \LF
 } % large print end
