@@ -7,6 +7,7 @@
             ],
             "defines": [
                 "CS333_P1",
+                "CS333_P2",
                 "PRINT_SYSCALLS",
                 "PDX_XV6"
             ],
