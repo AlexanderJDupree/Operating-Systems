@@ -52,7 +52,7 @@ printint(int xx, int base, int sign)
 
 // Print character to console
 void
-cputs(char c)
+cputc(char c)
 {
   int locking = cons.locking;
 
