@@ -46,11 +46,17 @@ procdump(struct uproc* p)
 static void
 ps(uint max)
 {
+#define HEADER "\nPID\tName         UID\tGID\tPPID\tElapsed\t  CPU\tState\tSize\n"
+
   typedef struct uproc uproc;
 
   uproc* table = (uproc*) malloc(sizeof(uproc) * max);
 
-#define HEADER "\nPID\tName         UID\tGID\tPPID\tElapsed\t  CPU\tState\tSize\n"
+  if(!table)
+  {
+    printf(2, "PS: Failed to allocate uproc table\n");
+    return;
+  }
 
   if((max = getprocs(max, table)) < 0)
   {
