@@ -9,7 +9,7 @@ struct uproc {
   uint priority;
 #endif // CS333_P4
   uint elapsed_ticks;
-  uint CPU_total_ticks;
+  uint cpu_ticks_total;
   char state[STRMAX];
   uint size;
   char name[STRMAX];

@@ -44,6 +44,8 @@ struct proc {
   uint pid;                    // Process ID
   uint uid;                    // User Identifier
   uint gid;                    // Group Identifier
+  uint cpu_ticks_in;           // ticks when scheduled
+  uint cpu_ticks_total;        // total elapsed ticks in CPU
   struct proc *parent;         // Parent process. NULL indicates no parent
   struct trapframe *tf;        // Trap frame for current syscall
   struct context *context;     // swtch() here to run process

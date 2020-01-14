@@ -5,6 +5,7 @@
 #include "mmu.h"
 #include "x86.h"
 #include "proc.h"
+#include "uproc.h"
 #include "spinlock.h"
 
 static char *states[] = {
@@ -140,7 +141,9 @@ allocproc(void)
   memset(p->context, 0, sizeof *p->context);
   p->context->eip = (uint)forkret;
 
-  p->start_ticks = ticks;
+  p->start_ticks     = ticks;
+  p->cpu_ticks_in    = 0;
+  p->cpu_ticks_total = 0;
   return p;
 }
 
@@ -388,6 +391,7 @@ scheduler(void)
       c->proc = p;
       switchuvm(p);
       p->state = RUNNING;
+      p->cpu_ticks_in = ticks;
       swtch(&(c->scheduler), p->context);
       switchkvm();
 
@@ -427,6 +431,9 @@ sched(void)
     panic("sched running");
   if(readeflags()&FL_IF)
     panic("sched interruptible");
+
+  p->cpu_ticks_total += (ticks - p->cpu_ticks_in);
+
   intena = mycpu()->intena;
   swtch(&p->context, mycpu()->scheduler);
   mycpu()->intena = intena;
@@ -551,16 +558,16 @@ kill(int pid)
 // Runs when user types ^P on console.
 // No lock to avoid wedging a stuck machine further.
 
-void
+static void
 dumpfield(const char* field, int field_width)
 {
   for(int i = 0; field[i] && field_width >= 0; ++i)
   {
     --field_width;
-    cputs(field[i]);
+    cputc(field[i]);
   }
   // Fill with spaces
-  while(--field_width >= 0) { cputs(' '); }
+  while(--field_width >= 0) { cputc(' '); }
 }
 
 #if defined(CS333_P4)
@@ -586,8 +593,8 @@ procdumpP2(struct proc* p, const char* state)
   // If parent is NULL - Set ppid to pid
   int ppid = (p->parent) ? p->parent->pid : p->pid;
 
+  double cpu = p->cpu_ticks_total / 1000.0f;
   double elapsed = (ticks - p->start_ticks) / 1000.0f;
-  int cpu = -1; // TODO Implement CPU field
 
   char buf[32]; // 32 digits can more than hold any 32 bit number
 
@@ -597,7 +604,7 @@ procdumpP2(struct proc* p, const char* state)
   dumpfield(itoa(p->gid, buf, 10), 8);
   dumpfield(itoa(ppid, buf, 10), 8);
   dumpfield(dtoa(elapsed, buf, 3), 10);
-  dumpfield(itoa(cpu, buf, 10), 6);
+  dumpfield(dtoa(cpu, buf, 3), 6);
   dumpfield(state, 8);
   dumpfield(itoa(p->sz, buf, 10), 8);
 
@@ -648,7 +655,6 @@ procdump(void)
     else
       state = "???";
 
-    // see TODOs above this function
 #if defined(CS333_P4)
     procdumpP4(p, state);
 #elif defined(CS333_P3)
@@ -672,6 +678,41 @@ procdump(void)
   cprintf("$ ");  // simulate shell prompt
 #endif // CS333_P1
 }
+
+#ifdef CS333_P2
+
+int
+getprocs(uint max, struct uproc* utable)
+{
+  int i = 0;
+  struct proc *p;
+
+  acquire(&ptable.lock);
+  for(p = ptable.proc; p < ptable.proc + NPROC && i < max; p++)
+  {
+    if(p->state != UNUSED && p->state != EMBRYO)
+    {
+      struct uproc* uproc = utable + i++;
+
+      uproc->pid  = p->pid;
+      uproc->uid  = p->uid;
+      uproc->gid  = p->gid;
+      uproc->size = p->sz;
+
+      uproc->ppid = (p->parent) ? p->parent->pid : p->pid;
+      uproc->elapsed_ticks   = ticks - p->start_ticks;
+      uproc->cpu_ticks_total = p->cpu_ticks_total;
+
+      safestrcpy(uproc->name, p->name, sizeof(uproc->name));
+      safestrcpy(uproc->state, states[p->state], sizeof(uproc->state));
+    }
+  }
+  release(&ptable.lock);
+
+  return i;
+}
+
+#endif // CS333_P2
 
 #if defined(CS333_P3)
 // list management helper functions

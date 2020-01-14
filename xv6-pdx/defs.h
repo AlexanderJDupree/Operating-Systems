@@ -4,6 +4,7 @@ struct file;
 struct inode;
 struct pipe;
 struct proc;
+struct uproc;
 struct rtcdate;
 struct spinlock;
 struct sleeplock;
@@ -18,7 +19,7 @@ void            bwrite(struct buf*);
 
 // console.c
 void            consoleinit(void);
-void            cputs(char);
+void            cputc(char);
 void            cprintf(char*, ...);
 void            consoleintr(int(*)(void));
 void            panic(char*) __attribute__((noreturn));
@@ -125,6 +126,9 @@ void            userinit(void);
 int             wait(void);
 void            wakeup(void*);
 void            yield(void);
+#ifdef CS333_P2
+int             getprocs(uint, struct uproc*);
+#endif // CS333_P2
 
 // swtch.S
 void            swtch(struct context**, struct context*);

@@ -6,6 +6,7 @@
 #include "memlayout.h"
 #include "mmu.h"
 #include "proc.h"
+#include "uproc.h"
 #ifdef PDX_XV6
 #include "pdx-kernel.h"
 #endif // PDX_XV6
@@ -163,4 +164,20 @@ sys_setgid(void)
   return myproc()->gid = gid;
 }
 
-#endif //CS333_P2
+int
+sys_getprocs(void)
+{
+  int max;
+  struct uproc* table;
+
+  if(argint(0, &max) < 0 || max < 0)
+    return -1;
+
+  // Retrieve user space uproc pointer from stack
+  if(argptr(1, (void*)&table, sizeof(struct uproc)) < 0)
+    return -1;
+
+  return getprocs(max, table);
+}
+
+#endif // CS333_P2
