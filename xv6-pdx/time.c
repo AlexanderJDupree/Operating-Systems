@@ -25,15 +25,15 @@ main(int argc, char* argv[])
   {
     if(wait() < 0) 
     { 
-        printf(2, "TIME: Wait error occured");
+      printf(2, "TIME: Wait error occured");
     }
     else
     {
-        int elapsed = uptime() - start_ticks;
-        int seconds = elapsed / 1000;
-        int ms      = elapsed % 1000;
+      int elapsed = uptime() - start_ticks;
+      int seconds = elapsed / 1000;
+      int ms      = elapsed % 1000;
 
-        printf(1, "%s ran in %d.%ds\n", argv[1], seconds, ms);
+      printf(1, "%s ran in %d.%ds\n", argv[1], seconds, ms);
     }
   }
   exit();
