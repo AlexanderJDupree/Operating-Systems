@@ -9,7 +9,7 @@
                 "CS333_P1",
                 "CS333_P2",
                 "PRINT_SYSCALLS",
-                "PDX_XV6"
+                "PDX_XV6",
                 "USE_BUILTINS"
             ],
             "compilerPath": "/usr/bin/clang",
