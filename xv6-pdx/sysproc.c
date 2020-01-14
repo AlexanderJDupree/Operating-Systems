@@ -129,13 +129,14 @@ sys_getuid(void)
 uint
 sys_getgid(void)
 {
-  return myproc()->pid;
+  return myproc()->gid;
 }
 
 uint
 sys_getppid(void)
 {
-  return myproc()->parent->pid;
+  // Return parents PID if it exists, else this PID
+  return myproc()->parent ? myproc()->parent->pid : sys_getpid();
 }
 
 int
@@ -144,8 +145,8 @@ sys_setuid(void)
   int uid;
 
   // Get argument off the stack
-  if(argint(0, &uid) < 0)
-    return -1;
+  if(argint(0, &uid) < 0 || !(UID_MIN < uid && uid < UID_MAX))
+    return -1; // Failed to retrieve arg OR uid not in min/max range
 
   return myproc()->uid = uid;
 }
@@ -156,8 +157,8 @@ sys_setgid(void)
   int gid;
 
   // Get argument off the stack
-  if(argint(0, &gid) < 0)
-    return -1;
+  if(argint(0, &gid) < 0 || !(GID_MIN < gid && gid < GID_MAX))
+    return -1; // Failed to retrieve arg OR gid not in min/max range
 
   return myproc()->gid = gid;
 }

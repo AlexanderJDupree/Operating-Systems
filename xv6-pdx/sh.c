@@ -157,7 +157,7 @@ setbuiltin(char *p)
     while (strncmp(p, " ", 1) == 0) p++; // chomp spaces
     i = atoi(p);
     rc = (setuid(i));
-    if (rc == 0)
+    if (rc >= 0)
       return 0;
   } else
   if (strncmp("gid", p, 3) == 0) {
@@ -165,7 +165,7 @@ setbuiltin(char *p)
     while (strncmp(p, " ", 1) == 0) p++; // chomp spaces
     i = atoi(p);
     rc = (setgid(i));
-    if (rc == 0)
+    if (rc >= 0)
       return 0;
   }
   printf(2, "Invalid _set parameter\n");
