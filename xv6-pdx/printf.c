@@ -2,7 +2,7 @@
 #include "stat.h"
 #include "user.h"
 
-static void
+void
 putc(int fd, char c)
 {
   write(fd, &c, 1);

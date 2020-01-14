@@ -37,6 +37,7 @@ uint getppid(void);
 
 int setuid(int);
 int setgid(int);
+int getprocs(uint, struct uproc*);
 #endif // CS333_P2
 
 // ulib.c
@@ -45,6 +46,7 @@ char* strcpy(char*, char*);
 void *memmove(void*, void*, int);
 char* strchr(const char*, char c);
 int strcmp(const char*, const char*);
+void putc(int, char);
 void printf(int, char*, ...);
 char* gets(char*, int max);
 uint strlen(char*);
@@ -56,3 +58,7 @@ int atoi(const char*);
 int atoo(const char*);
 int strncmp(const char*, const char*, uint);
 #endif // PDX_XV6
+
+char* reverse(char*, int);
+char* itoa(int n, char* buf, int base);
+char* dtoa(double val, char* buf, int digits);

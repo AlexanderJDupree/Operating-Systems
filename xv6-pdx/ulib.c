@@ -4,6 +4,8 @@
 #include "user.h"
 #include "x86.h"
 
+static const char DIGITS[] = "0123456789abcdef";
+
 char*
 strcpy(char *s, char *t)
 {
@@ -144,4 +146,74 @@ memmove(void *vdst, void *vsrc, int n)
   while(n-- > 0)
     *dst++ = *src++;
   return vdst;
+}
+
+char*
+reverse(char* s, int n)
+{
+  int j = n - 1, temp; 
+  for(int i = 0; i < j; ++i)
+  {
+    temp = s[i]; 
+    s[i] = s[j]; 
+    s[j] = temp; 
+    --j;
+  }
+  return s;
+}
+
+char*
+itoa(int val, char* buf, int base)
+{
+  int i = 0; 
+  int sign = 1; 
+
+  if (val < 0 && base == 10) 
+  { 
+      sign = -1; 
+      val *= -1; 
+  } 
+
+  // Extract digits
+  do {
+    buf[i++] = DIGITS[val % base];
+  } while((val /= base) != 0);
+
+  if(sign < 0) { buf[i++] = '-'; }
+
+  buf[i] = '\0'; // Append string terminator
+
+  // Reverse and return
+  return reverse(buf, i); 
+}
+
+char* 
+dtoa(double val, char* buf, int digits)
+{
+  int int_part = (int) val;
+  double mantissa = val - (double) int_part;
+
+  int i = strlen(itoa(int_part, buf, 10));
+
+  if(digits > 0)
+  {
+    buf[i++] = '.';
+
+    double d = 1.0f;
+    while((mantissa * 10) < d && digits-- > 0)
+    {
+      // Add leading zeroes
+      mantissa *= 10;
+      buf[i++] = '0';
+    }
+
+    for(int i = 0; i < digits; ++i)
+    {
+      d *= 10;
+    }
+
+    itoa((int) (mantissa *= d), buf + i, 10);
+  }
+
+  return buf;
 }

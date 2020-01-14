@@ -157,16 +157,14 @@ dtoa(double val, char* buf, int digits)
     buf[i++] = '.';
 
     double d = 1.0f;
-    double pow = 10.0f;
-    while((mantissa *= pow) < d && --digits > 0)
+    while((mantissa * 10) < d && digits-- > 0)
     {
       // Add leading zeroes
+      mantissa *= 10;
       buf[i++] = '0';
-      pow *= 10;
-      --digits;
     }
 
-    for(int i = 0; i < digits - 1; ++i)
+    for(int i = 0; i < digits; ++i)
     {
       d *= 10;
     }
