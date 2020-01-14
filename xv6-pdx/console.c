@@ -50,6 +50,21 @@ printint(int xx, int base, int sign)
 }
 //PAGEBREAK: 50
 
+// Print character to console
+void
+cputs(char c)
+{
+  int locking = cons.locking;
+
+  if(locking)
+    acquire(&cons.lock);
+
+  consputc(c);
+
+  if(locking)
+    release(&cons.lock);
+}
+
 // Print to the console. only understands %d, %x, %p, %s.
 void
 cprintf(char *fmt, ...)
