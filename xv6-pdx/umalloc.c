@@ -24,6 +24,7 @@ static Header *freep;
 void
 free(void *ap)
 {
+  // TODO Check for NULL
   Header *bp, *p;
 
   bp = (Header*)ap - 1;

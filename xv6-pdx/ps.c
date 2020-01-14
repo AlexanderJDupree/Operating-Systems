@@ -50,15 +50,16 @@ ps(uint max)
 
   typedef struct uproc uproc;
 
-  uproc* table = (uproc*) malloc(sizeof(uproc) * max);
+  uproc* table;
 
-  if(!table)
+  if((table = (uproc*) malloc(sizeof(uproc) * max)) == NULL)
   {
-    printf(2, "PS: Failed to allocate uproc table\n");
+    printf(2, "PS: Failed to allocate process table\n");
     return;
   }
 
-  if((max = getprocs(max, table)) < 0)
+  // Check malloc didn't return null and getrprocs was sucessful
+  if(!table || (max = getprocs(max, table)) < 0)
   {
     printf(2, "PS: Failed to retrieve process information\n");
   }
