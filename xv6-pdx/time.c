@@ -11,32 +11,30 @@
 int
 main(int argc, char* argv[])
 {
-    int start_ticks = uptime();
-    int pid = fork();
+  int start_ticks = uptime();
+  int pid = fork();
 
-    if(pid < 0)
-    {
-        printf(2, "TIME: Fork error occured. Exiting.");
-    }
-    else if(pid == 0) // Child
-    {
-        // Execute command, no need to check RC.
-        exec(argv[1], argv + 1);
+  if(pid < 0) 
+    printf(2, "TIME: Fork error occured. Exiting.");
+
+  else if(pid == 0) // Child
+  {
+    exec(argv[1], argv + 1);
+  }
+  else // Parent
+  {
+    if(wait() < 0) 
+    { 
+        printf(2, "TIME: Wait error occured");
     }
     else
     {
-        if(wait() < 0) 
-        { 
-            printf(2, "TIME: Wait error occured");
-        }
-        else
-        {
-            int elapsed = uptime() - start_ticks;
-            int seconds = elapsed / 1000;
-            int ms      = elapsed % 1000;
+        int elapsed = uptime() - start_ticks;
+        int seconds = elapsed / 1000;
+        int ms      = elapsed % 1000;
 
-            printf(1, "%s ran in %d.%ds\n", argv[1], seconds, ms);
-        }
+        printf(1, "%s ran in %d.%ds\n", argv[1], seconds, ms);
     }
-    exit();
+  }
+  exit();
 }

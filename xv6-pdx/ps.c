@@ -46,48 +46,46 @@ procdump(struct uproc* p)
 static void
 ps(uint max)
 {
-    typedef struct uproc uproc;
+  typedef struct uproc uproc;
 
-    uproc* table = (uproc*) malloc(sizeof(uproc) * max);
+  uproc* table = (uproc*) malloc(sizeof(uproc) * max);
 
 #define HEADER "\nPID\tName         UID\tGID\tPPID\tElapsed\t  CPU\tState\tSize\n"
 
-    if((max = getprocs(max, table)) < 0)
+  if((max = getprocs(max, table)) < 0)
+  {
+    printf(2, "PS: Failed to retrieve process information\n");
+  }
+  else
+  {
+    printf(1, HEADER);
+    for(struct uproc* p = table; p < table + max; ++p)
     {
-        printf(2, "PS: Failed to retrieve process information\n");
+      procdump(p);
     }
-    else
-    {
-        printf(1, HEADER);
-        for(struct uproc* p = table; p < table + max; ++p)
-        {
-            procdump(p);
-        }
-    }
-    free(table);
+  }
+  free(table);
 }
 
 static void
 help()
 {
-    printf(2, "\nUsage: ps [OPTIONS]\n\n  -m <num>\tnumber of processes to display\n");
+  printf(2, "\nUsage: ps [OPTIONS]\n\n  -m <num>\tnumber of processes to display\n");
 }
-
 
 int
 main(int argc, char* argv[])
 {
-    int max = 64;
+  int max = 64;
 
-    if(argc < 2 || (strncmp(argv[1], "-m", 2) == 0 && (max = atoi(argv[2])) > 0))
-    {
-        ps(max);
-    }
-    else
-    {
-        printf(2, "PS: Failed to parse arguments\n");
-        help();
-    }
-
-    exit();
+  if(argc < 2 || (strncmp(argv[1], "-m", 2) == 0 && (max = atoi(argv[2])) > 0))
+  {
+    ps(max);
+  }
+  else
+  {
+    printf(2, "PS: Failed to parse arguments\n");
+    help();
+  }
+  exit();
 }
