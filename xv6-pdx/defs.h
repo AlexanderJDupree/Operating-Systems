@@ -18,6 +18,7 @@ void            bwrite(struct buf*);
 
 // console.c
 void            consoleinit(void);
+void            cputs(char);
 void            cprintf(char*, ...);
 void            consoleintr(int(*)(void));
 void            panic(char*) __attribute__((noreturn));
@@ -151,6 +152,9 @@ char*           safestrcpy(char*, const char*, int);
 int             strlen(const char*);
 int             strncmp(const char*, const char*, uint);
 char*           strncpy(char*, const char*, int);
+char*           reverse(char*, int);
+char*           itoa(int n, char* buf, int base);
+char*           dtoa(double val, char* buf, int digits);
 
 // syscall.c
 int             argint(int, int*);
