@@ -551,22 +551,59 @@ kill(int pid)
 // Runs when user types ^P on console.
 // No lock to avoid wedging a stuck machine further.
 
+void
+dumpfield(const char* field, int field_width)
+{
+  for(int i = 0; field[i] && field_width >= 0; ++i)
+  {
+    --field_width;
+    cputs(field[i]);
+  }
+  // Fill with spaces
+  while(--field_width >= 0) { cputs(' '); }
+}
+
 #if defined(CS333_P4)
 // TODO for Project 4, define procdumpP4() here
+void
+procdumpP4(struct proc* p, const char* state)
+{
+  cprintf("\nprocdumpP3 Not yet implemented");
+}
+
 #elif defined(CS333_P3)
 // TODO for Project 3, define procdumpP3() here
+void
+procdumpP3(struct proc* p, const char* state)
+{
+  cprintf("\nprocdumpP3 Not yet implemented");
+}
 #elif defined(CS333_P2)
-// TODO for Project 2, define procdumpP2() here
+
 void
 procdumpP2(struct proc* p, const char* state)
 {
-  int elapsed = ticks - p->start_ticks;
-  int seconds = elapsed / 1000;
-  int ms      = elapsed % 1000;
+  // If parent is NULL - Set ppid to pid
+  int ppid = (p->parent) ? p->parent->pid : p->pid;
 
-  cprintf("%d\t%s\t     %d.%ds\t%s\t%d\t", p->pid, p->name, seconds, ms, state, p->sz);
+  double elapsed = (ticks - p->start_ticks) / 1000.0f;
+  int cpu = -1; // TODO Implement CPU field
+
+  char buf[32]; // 32 digits can more than hold any 32 bit number
+
+  dumpfield(itoa(p->pid, buf, 10), 8);
+  dumpfield(p->name, 13);
+  dumpfield(itoa(p->uid, buf, 10), 11);
+  dumpfield(itoa(p->gid, buf, 10), 8);
+  dumpfield(itoa(ppid, buf, 10), 8);
+  dumpfield(dtoa(elapsed, buf, 3), 10);
+  dumpfield(itoa(cpu, buf, 10), 6);
+  dumpfield(state, 8);
+  dumpfield(itoa(p->sz, buf, 10), 8);
+
   return;
 }
+
 #elif defined(CS333_P1)
 // TODO for Project 1, define procdumpP1() here
 void
@@ -590,11 +627,11 @@ procdump(void)
   uint pc[10];
 
 #if defined(CS333_P4)
-#define HEADER "\nPID\tName         UID\tGID\tPPID\tPrio\tElapsed\tCPU\tState\tSize\t PCs\n"
+#define HEADER "\nPID\tName         UID\tGID\tPPID\tPrio\tElapsed\t  CPU\tState\tSize\t PCs\n"
 #elif defined(CS333_P3)
-#define HEADER "\nPID\tName         UID\tGID\tPPID\tElapsed\tCPU\tState\tSize\t PCs\n"
+#define HEADER "\nPID\tName         UID\tGID\tPPID\tElapsed\t  CPU\tState\tSize\t PCs\n"
 #elif defined(CS333_P2)
-#define HEADER "\nPID\tName         UID\tGID\tPPID\tElapsed\tCPU\tState\tSize\t PCs\n"
+#define HEADER "\nPID\tName         UID\tGID\tPPID\tElapsed\t  CPU\tState\tSize\t PCs\n"
 #elif defined(CS333_P1)
 #define HEADER "\nPID\tName         Elapsed\tState\tSize\t PCs\n"
 #else

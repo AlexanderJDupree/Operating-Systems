@@ -9,6 +9,12 @@
 #define ROOT_UID 0
 #define ROOT_GID 0
 
+#define UID_MIN 0
+#define UID_MAX 32767
+
+#define GID_MIN 0
+#define GID_MAX 32767
+
 #define TRUE 1
 #define FALSE 0
 #define RETURN_SUCCESS 0
