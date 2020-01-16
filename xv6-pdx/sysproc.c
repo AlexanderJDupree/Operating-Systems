@@ -149,7 +149,7 @@ sys_setuid(void)
   if(argint(0, &uid) < 0 || !(UID_MIN < uid && uid < UID_MAX))
     return -1; // Failed to retrieve arg OR uid not in min/max range
 
-  return myproc()->uid = uid;
+  return myproc()->uid = uid; // Implicitly casts to uint
 }
 
 int
@@ -161,7 +161,7 @@ sys_setgid(void)
   if(argint(0, &gid) < 0 || !(GID_MIN < gid && gid < GID_MAX))
     return -1; // Failed to retrieve arg OR gid not in min/max range
 
-  return myproc()->gid = gid;
+  return myproc()->gid = gid; // Implicitly casts to uint
 }
 
 int
