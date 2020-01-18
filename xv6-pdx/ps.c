@@ -44,7 +44,7 @@ procdump(struct uproc* p)
 }
 
 static void
-ps(uint max)
+ps(int max)
 {
 #define HEADER "\nPID\tName         UID\tGID\tPPID\tElapsed\t  CPU\tState\tSize\n"
 
@@ -59,9 +59,9 @@ ps(uint max)
   }
 
   // Check malloc didn't return null and getrprocs was sucessful
-  if(!table || (max = getprocs(max, table)) < 0)
+  if((max = getprocs(max, table)) < 0)
   {
-    printf(2, "PS: Failed to retrieve process information\n");
+    printf(1, "PS: Failed to retrieve process information\n");
   }
   else
   {

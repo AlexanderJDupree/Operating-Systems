@@ -177,7 +177,7 @@ getcputime(char * name, struct uproc * table){
     return -1;
   }
   else
-    return p->CPU_total_ticks;
+    return p->cpu_ticks_total;
 }
 
 static void
@@ -262,12 +262,18 @@ testinvalidarray(void){
     printf(2, "Error: malloc() call failed. %s at line %d\n", __FUNCTION__, __LINE__);
     exit();
   }
+
+  printf(1, "Attempting to call getprocs with Max paramter larger than table size");
+
   ret = getprocs(1024, table);
   free(table);
   if(ret >= 0){
     printf(2, "FAILED: called getprocs with max way larger than table and returned %d, not error\n", ret);
     return -1;
   }
+
+  printf(1, "SUCCESS: getprocs returned failure");
+
   return 0;
 }
 

@@ -146,7 +146,7 @@ sys_setuid(void)
   int uid;
 
   // Get argument off the stack
-  if(argint(0, &uid) < 0 || !(UID_MIN < uid && uid < UID_MAX))
+  if(argint(0, &uid) < 0 || !(UID_MIN <= uid && uid <= UID_MAX))
     return -1; // Failed to retrieve arg OR uid not in min/max range
 
   return myproc()->uid = uid; // Implicitly casts to uint
@@ -158,7 +158,7 @@ sys_setgid(void)
   int gid;
 
   // Get argument off the stack
-  if(argint(0, &gid) < 0 || !(GID_MIN < gid && gid < GID_MAX))
+  if(argint(0, &gid) < 0 || !(GID_MIN <= gid && gid <= GID_MAX))
     return -1; // Failed to retrieve arg OR gid not in min/max range
 
   return myproc()->gid = gid; // Implicitly casts to uint
@@ -174,7 +174,7 @@ sys_getprocs(void)
     return -1;
 
   // Retrieve user space uproc pointer from stack
-  if(argptr(1, (void*)&table, sizeof(struct uproc)) < 0)
+  if(argptr(1, (void*)&table, sizeof(struct uproc) * max) < 0)
     return -1;
 
   return getprocs(max, table);
