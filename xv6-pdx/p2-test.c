@@ -121,7 +121,7 @@ testuidgid(void)
     success = -1;
 
   if (success == 0)
-    printf(1, "** UID/GID TEST: All tests passed! **\n");
+    printf(1, "** All tests passed! **\n");
 
   return success;
 }
@@ -226,7 +226,7 @@ testcputime(char * name){
   free(table);
 
   if(success == 0)
-    printf(1, "** CPU-TIME: All Tests Passed! **\n");
+    printf(1, "** All Tests Passed! **\n");
 
   return success;
 }

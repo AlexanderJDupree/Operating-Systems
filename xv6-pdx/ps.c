@@ -55,10 +55,9 @@ ps(int max)
   if((table = (uproc*) malloc(sizeof(uproc) * max)) == NULL)
   {
     printf(2, "PS: Failed to allocate process table\n");
-    return;
+    return; // Free does not check for null must return here
   }
 
-  // Check malloc didn't return null and getrprocs was sucessful
   if((max = getprocs(max, table)) < 0)
   {
     printf(1, "PS: Failed to retrieve process information\n");
@@ -77,7 +76,7 @@ ps(int max)
 static void
 help()
 {
-  printf(2, "\nUsage: ps [OPTIONS]\n\n  -m <num>\tnumber of processes to display\n");
+  printf(2, "\nUsage: ps [OPTIONS]\n\n  -m <num>\tnumber of processes to display\n\n");
 }
 
 int
