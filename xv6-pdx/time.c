@@ -34,7 +34,7 @@ main(int argc, char* argv[])
     int seconds = elapsed / 1000;
     int ms      = elapsed % 1000;
 
-    printf(1, "%s ran in %d.%ds\n", argv[1], seconds, ms);
+    printf(1, "%s ran in %d.%d seconds\n", argv[1], seconds, ms);
   }
   exit();
 }
