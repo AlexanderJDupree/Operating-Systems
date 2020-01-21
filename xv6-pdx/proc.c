@@ -558,18 +558,6 @@ kill(int pid)
 // Runs when user types ^P on console.
 // No lock to avoid wedging a stuck machine further.
 
-static void
-dumpfield(const char* field, int field_width)
-{
-  for(int i = 0; field[i] && field_width >= 0; ++i)
-  {
-    --field_width;
-    cputc(field[i]);
-  }
-  // Fill with spaces
-  while(--field_width >= 0) { cputc(' '); }
-}
-
 #if defined(CS333_P4)
 // TODO for Project 4, define procdumpP4() here
 void
@@ -586,6 +574,18 @@ procdumpP3(struct proc* p, const char* state)
   cprintf("\nprocdumpP3 Not yet implemented");
 }
 #elif defined(CS333_P2)
+
+static void
+dumpfield(const char* field, int field_width)
+{
+  for(int i = 0; field[i] && field_width >= 0; ++i)
+  {
+    --field_width;
+    cputc(field[i]);
+  }
+  // Fill with spaces
+  while(--field_width >= 0) { cputc(' '); }
+}
 
 void
 procdumpP2(struct proc* p, const char* state)
