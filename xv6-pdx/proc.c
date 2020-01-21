@@ -699,7 +699,9 @@ getprocs(uint max, struct uproc* utable)
       uproc->gid  = p->gid;
       uproc->size = p->sz;
 
+      // If parent exists, set ppid to their pid, else process pid
       uproc->ppid = (p->parent) ? p->parent->pid : p->pid;
+
       uproc->elapsed_ticks   = ticks - p->start_ticks;
       uproc->cpu_ticks_total = p->cpu_ticks_total;
 
@@ -710,6 +712,30 @@ getprocs(uint max, struct uproc* utable)
   release(&ptable.lock);
 
   return i;
+}
+
+int
+setuid(struct proc* proc, uint uid)
+{
+  // uid is bounds checked in sysproc.c
+  // Atomically set the process UID
+  acquire(&ptable.lock);
+  proc->uid = uid;
+  release(&ptable.lock);
+
+  return uid;
+}
+
+int
+setgid(struct proc* proc, uint gid)
+{
+  // gid is bounds checked in sysproc.c
+  // Atomically set the process GID
+  acquire(&ptable.lock);
+  proc->gid = gid;
+  release(&ptable.lock);
+
+  return gid;
 }
 
 #endif // CS333_P2
