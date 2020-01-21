@@ -128,6 +128,8 @@ void            wakeup(void*);
 void            yield(void);
 #ifdef CS333_P2
 int             getprocs(uint, struct uproc*);
+int             setuid(struct proc*, uint);
+int             setgid(struct proc*, uint);
 #endif // CS333_P2
 
 // swtch.S
