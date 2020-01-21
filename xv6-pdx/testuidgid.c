@@ -1,4 +1,5 @@
 // Example for testing part of CS333 P2.
+// Refactored by Alexander DuPree
 #ifdef CS333_P2
 #include "types.h"
 #include "user.h"
@@ -169,11 +170,11 @@ testuidgid(void)
 
   if(success)
   {
-    printf(1, "SUCCESS: All Tests Pass!\n");
+    printf(1, "** TEST UID/GID: All Tests Pass! **\n");
   }
   else
   {
-    printf(1, "FAILURE: Some tests have failed.\n");
+    printf(1, "** TEST UID/GID: Failure! Check log for details. **\n");
   }
 
   return success;

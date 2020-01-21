@@ -1,6 +1,7 @@
 /*
   A basic test suite for Portland State University CS333 Operating Systems Project 2.
   Created by Joe Coleman
+  Refactored by Alex DuPree
 */
 #ifdef CS333_P2
 #include "types.h"
@@ -80,7 +81,7 @@ testuid(uint new_val, uint expected_get_val, int expected_set_ret){
   return success;
 }
 
-static void
+static int
 testuidgid(void)
 {
   int uid, gid;
@@ -120,10 +121,12 @@ testuidgid(void)
     success = -1;
 
   if (success == 0)
-    printf(1, "** All tests passed! **\n");
+    printf(1, "** UID/GID TEST: All tests passed! **\n");
+
+  return success;
 }
 
-static void
+static int
 testuidgidinheritance(void){
   int ret, success, uid, gid;
   success = 0;
@@ -134,7 +137,7 @@ testuidgidinheritance(void){
   if (testgid(12345, 12345, 0))
     success = -1;
   if(success != 0)
-    return;
+    return success;
 
   ret = fork();
   if(ret == 0){
@@ -152,6 +155,7 @@ testuidgidinheritance(void){
   }
   else {
     wait();
+    return success;
   }
 }
 #endif
@@ -180,7 +184,7 @@ getcputime(char * name, struct uproc * table){
     return p->cpu_ticks_total;
 }
 
-static void
+static int
 testcputime(char * name){
   struct uproc *table;
   uint time1, time2, pre_sleep, post_sleep;
@@ -222,7 +226,9 @@ testcputime(char * name){
   free(table);
 
   if(success == 0)
-    printf(1, "** All Tests Passed! **\n");
+    printf(1, "** CPU-TIME: All Tests Passed! **\n");
+
+  return success;
 }
 #endif
 #endif
@@ -382,21 +388,31 @@ testtime(void){
 int
 main(int argc, char *argv[])
 {
+  int success = 0;
+
   #ifdef CPUTIME_TEST
-  testcputime(argv[0]);
+  success |= testcputime(argv[0]);
   #endif
   #ifdef UIDGIDPPID_TEST
-  testuidgid();
-  testuidgidinheritance();
+  success |= testuidgid();
+  success |= testuidgidinheritance();
   testppid();
   #endif
   #ifdef GETPROCS_TEST
-  testgetprocs();  // no need to pass argv[0]
+  testgetprocs();
   #endif
   #ifdef TIME_TEST
   testtime();
   #endif
-  printf(1, "\n** End of Tests **\n");
+
+  if(success == 0)
+  {
+    printf(1, "\n** P2-Test: ALL TESTS PASS **\n");
+  }
+  else
+  {
+    printf(2, "\n** P2-Test: Errors occured, review log for details **\n");
+  }
   exit();
 }
 #endif
