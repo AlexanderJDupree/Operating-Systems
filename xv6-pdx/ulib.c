@@ -217,3 +217,9 @@ dtoa(double val, char* buf, int digits)
 
   return buf;
 }
+
+int
+isdigit(char c)
+{
+  return ('0' <= c && c <= '9');
+}

@@ -143,6 +143,15 @@ getcmd(char *buf, int nbuf)
 }
 
 #ifdef USE_BUILTINS
+
+static int
+isnumber(char* str)
+{
+  while(*str && isdigit(*(str++)));
+
+  return !(*str);
+}
+
 // ***** processing for shell builtins begins here *****
 int
 setbuiltin(char *p)
@@ -155,18 +164,27 @@ setbuiltin(char *p)
   if (strncmp("uid", p, 3) == 0) {
     p += strlen("uid");
     while (strncmp(p, " ", 1) == 0) p++; // chomp spaces
-    i = atoi(p);
-    rc = (setuid(i));
-    if (rc >= 0)
-      return 0;
+
+    if(isnumber(p))
+    {
+      i = atoi(p);
+      rc = (setuid(i));
+      if (rc >= 0)
+        return 0;
+    }
+
   } else
   if (strncmp("gid", p, 3) == 0) {
     p += strlen("gid");
     while (strncmp(p, " ", 1) == 0) p++; // chomp spaces
-    i = atoi(p);
-    rc = (setgid(i));
-    if (rc >= 0)
-      return 0;
+
+    if(isnumber(p))
+    {
+      i = atoi(p);
+      rc = (setuid(i));
+      if (rc >= 0)
+        return 0;
+    }
   }
   printf(2, "Invalid _set parameter\n");
   return -1;

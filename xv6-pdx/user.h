@@ -62,3 +62,4 @@ int strncmp(const char*, const char*, uint);
 char* reverse(char*, int);
 char* itoa(int n, char* buf, int base);
 char* dtoa(double val, char* buf, int digits);
+int isdigit(char);
