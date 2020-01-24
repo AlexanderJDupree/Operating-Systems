@@ -25,6 +25,7 @@ main(int argc, char* argv[])
   if(pid == 0) // Child
   {
     exec(argv[1], argv + 1);
+    exit(); // exec failed
   }
   else // Parent
   {
