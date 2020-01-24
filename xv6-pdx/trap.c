@@ -16,6 +16,8 @@ extern uint vectors[];  // in vectors.S: array of 256 entry pointers
 // Software Developer’s Manual, Vol 3A, 8.1.1 Guaranteed Atomic Operations.
 uint ticks __attribute__ ((aligned (4)));
 #else
+// If ticks isn't aligned, we can't guarantee atomic operations on the data. 
+// Therefore, ticks needs a spinlock to guarantee atomicity
 struct spinlock tickslock;
 uint ticks;
 #endif // PDX_XV6

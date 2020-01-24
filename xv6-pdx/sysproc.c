@@ -83,6 +83,10 @@ sys_sleep(void)
 int
 sys_uptime(void)
 {
+  // Loading ticks into local variable ensures that we get the number of ticks
+  // AT this time. Otherwise, there might be a context switch during the
+  // instruction 'return ticks'. Ticks is aligned at 4 bytes, and is guaranteed 
+  // to be atmoic.
   uint xticks;
 
   xticks = ticks;
