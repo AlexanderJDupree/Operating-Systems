@@ -1,3 +1,6 @@
+#ifndef XV6_UPROC_H
+#define XV6_UPROC_H
+
 #define STRMAX 32
 
 struct uproc {
@@ -15,3 +18,4 @@ struct uproc {
   char name[STRMAX];
 };
 
+#endif // XV6_UPROC_H
