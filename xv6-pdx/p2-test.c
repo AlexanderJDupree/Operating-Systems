@@ -278,7 +278,7 @@ testinvalidarray(void){
     return -1;
   }
 
-  printf(1, "SUCCESS: getprocs returned failure");
+  printf(1, "\nSUCCESS: getprocs returned failure\n");
 
   return 0;
 }
