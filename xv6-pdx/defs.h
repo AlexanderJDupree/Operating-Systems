@@ -204,3 +204,6 @@ void            clearpteu(pde_t *pgdir, char *uva);
 
 // number of elements in fixed-size array
 #define NELEM(x) (sizeof(x)/sizeof((x)[0]))
+
+// Anonymous nested function, ONLY works in GCC 7.4.0 or Greater
+#define LAMBDA(c_) ({ c_ _;})

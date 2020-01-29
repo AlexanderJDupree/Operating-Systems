@@ -42,9 +42,9 @@ static struct {
 #ifdef CS333_P3
 static void initProcessLists(void);
 static void initFreeList(void);
-//static void stateListAdd(struct ptrs*, struct proc*);
-//static int  stateListRemove(struct ptrs*, struct proc* p);
-//static void assertState(struct proc*, enum procstate, const char *, int);
+static void stateListAdd(struct ptrs*, struct proc*);
+static int  stateListRemove(struct ptrs*, struct proc* p);
+static void assertState(struct proc*, enum procstate, const char *, int);
 #endif
 
 static struct proc *initproc;
@@ -597,23 +597,53 @@ printppid(struct proc* p)
   cprintf("(PID: %d, PPID: %d)", p->pid, (p->parent) ? p->parent->pid : p->pid);
 }
 
-static void
-dumpList(struct ptrs* list, void (*info)(struct proc*))
+void*
+foldr(void* (*f)(struct proc*, void*), void* acc, struct proc* list)
 {
-  cprintf("Test");
+  if(!list) { return acc; }
+
+  return f(list, foldr(f, acc, list->next));
+}
+
+static void*
+foldl(void* (*f)(void*, struct proc*), void* acc, struct proc* list)
+{
+  if(!list) { return acc; }
+
+  // Tail-recursive
+  return foldl(f, f(acc, list), list->next);
+}
+
+static void
+map(void (*f)(struct proc*), struct proc* list)
+{
+  if(!list) { return; }
+
+  f(list); // Apply function
+  return map(f, list->next); // Traverse list
 }
 
 static uint
-length(struct ptrs* list)
+length(struct ptrs list)
 {
   uint length = 0;
-  struct proc* head = list->head;
-  while(head)
-  {
-    ++length;
-    head = head->next;
-  }
+  acquire(&ptable.lock);
+
+  foldl( LAMBDA(void* _(void* sum, struct proc* p){
+    *((uint*) sum) += 1;
+    return sum;
+  }), &length, list.head);
+
+  release(&ptable.lock);
   return length;
+}
+
+static void
+dumpList(struct ptrs list, void (*info)(struct proc*))
+{
+  acquire(&ptable.lock);
+  map(info, list.head);
+  release(&ptable.lock);
 }
 
 void
@@ -623,18 +653,18 @@ statelistdump(int state)
   {
     case RUNNING : 
       cprintf("Ready List Processes:\n");
-      dumpList(&ptable.list[RUNNING], printpid);
+      dumpList(ptable.list[RUNNING], printpid);
       break;
     case UNUSED : 
-      cprintf("Free List Size: %d\n", length(&ptable.list[UNUSED]));
+      cprintf("Free List Size: %d\n", length(ptable.list[UNUSED]));
       break;
     case SLEEPING : 
       cprintf("Sleep List Processes:\n");
-      dumpList(&ptable.list[SLEEPING], printpid);
+      dumpList(ptable.list[SLEEPING], printpid);
       break;
     case ZOMBIE :
       cprintf("Zombie List Processes:\n");
-      dumpList(&ptable.list[ZOMBIE], printppid);
+      dumpList(ptable.list[ZOMBIE], printppid);
       break;
     default:
       procdump();
@@ -828,7 +858,6 @@ stateListAdd(struct ptrs* list, struct proc* p)
 }
 #endif
 
-/*
 #if defined(CS333_P3)
 static int
 stateListRemove(struct ptrs* list, struct proc* p)
@@ -878,7 +907,6 @@ stateListRemove(struct ptrs* list, struct proc* p)
   return 0;
 }
 #endif
-*/
 
 #if defined(CS333_P3)
 static void
