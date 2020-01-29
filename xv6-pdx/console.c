@@ -229,10 +229,24 @@ consoleintr(int (*getc)(void))
       // procdump() locks cons.lock indirectly; invoke later
       doprocdump = 1;
       break;
+#ifdef CS333_P3
     case C('F'):  // UNUSED list dump
       doprocdump = 1;
       list = UNUSED;
       break;
+    case C('R'):  // RUNNING list dump
+      doprocdump = 1;
+      list = RUNNING;
+      break;
+    case C('S'):  // SLEEPING list dump
+      doprocdump = 1;
+      list = SLEEPING;
+      break;
+    case C('Z'):  // ZOMBIE list dump
+      doprocdump = 1;
+      list = ZOMBIE;
+      break;
+#endif // CS333_P3
 #ifdef PDX_XV6
     case C('D'):
       shutdown = TRUE;

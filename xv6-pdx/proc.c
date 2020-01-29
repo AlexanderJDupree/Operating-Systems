@@ -586,6 +586,62 @@ procdumpP4(struct proc* p, const char* state)
 #elif defined(CS333_P3) || defined(CS333_P2)
 
 static void
+printpid(struct proc* p)
+{
+  cprintf("(%d)", p->pid);
+}
+
+static void
+printppid(struct proc* p)
+{
+  cprintf("(PID: %d, PPID: %d)", p->pid, (p->parent) ? p->parent->pid : p->pid);
+}
+
+static void
+dumpList(struct ptrs* list, void (*info)(struct proc*))
+{
+  cprintf("Test");
+}
+
+static uint
+length(struct ptrs* list)
+{
+  uint length = 0;
+  struct proc* head = list->head;
+  while(head)
+  {
+    ++length;
+    head = head->next;
+  }
+  return length;
+}
+
+void
+statelistdump(int state)
+{
+  switch((enum procstate) state)
+  {
+    case RUNNING : 
+      cprintf("Ready List Processes:\n");
+      dumpList(&ptable.list[RUNNING], printpid);
+      break;
+    case UNUSED : 
+      cprintf("Free List Size: %d\n", length(&ptable.list[UNUSED]));
+      break;
+    case SLEEPING : 
+      cprintf("Sleep List Processes:\n");
+      dumpList(&ptable.list[SLEEPING], printpid);
+      break;
+    case ZOMBIE :
+      cprintf("Zombie List Processes:\n");
+      dumpList(&ptable.list[ZOMBIE], printppid);
+      break;
+    default:
+      procdump();
+  }
+}
+
+static void
 dumpfield(const char* field, int field_width)
 {
   for(int i = 0; field[i] && field_width >= 0; ++i)
@@ -641,58 +697,6 @@ procdumpP1(struct proc* p, const char* state)
   return;
 }
 #endif
-
-#ifdef CS333_P3
-static void
-printpid(struct proc* p)
-{
-  cprintf("(%d)", p->pid);
-}
-
-static void
-printppid(struct proc* p)
-{
-  cprintf("(PID: %d, PPID: %d)", p->pid, (p->parent) ? p->parent->pid : p->pid);
-}
-
-static void
-dumpList(struct ptrs* list, void (*info)(struct proc*))
-{
-  cprintf("Test");
-}
-
-static uint
-length(struct ptrs* list)
-{
-  return 0;
-}
-
-void
-statelistdump(int state)
-{
-  switch((enum procstate) state)
-  {
-    case RUNNING : 
-      cprintf("Ready List Processes:\n");
-      dumpList(&ptable.list[RUNNING], printpid);
-      break;
-    case UNUSED : 
-      cprintf("Free List Size: %d\n", length(&ptable.list[UNUSED]));
-      break;
-    case SLEEPING : 
-      cprintf("Sleep List Processes:\n");
-      dumpList(&ptable.list[SLEEPING], printpid);
-      break;
-    case ZOMBIE :
-      cprintf("Zombie List Processes:\n");
-      dumpList(&ptable.list[ZOMBIE], printppid);
-      break;
-    default:
-      procdump();
-  }
-}
-
-#endif // CS333_P3
 
 void
 procdump(void)
