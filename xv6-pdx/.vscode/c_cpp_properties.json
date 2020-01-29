@@ -8,6 +8,7 @@
             "defines": [
                 "CS333_P1",
                 "CS333_P2",
+                "CS333_P3",
                 "PRINT_SYSCALLS",
                 "PDX_XV6",
                 "USE_BUILTINS"

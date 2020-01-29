@@ -6,6 +6,7 @@
 #ifndef PDX_INCLUDE
 #define PDX_INCLUDE
 
+#ifdef CS333_P2
 #define ROOT_UID 0
 #define ROOT_GID 0
 
@@ -14,6 +15,7 @@
 
 #define GID_MIN 0
 #define GID_MAX 32767
+#endif // CS333_P2
 
 #define TRUE 1
 #define FALSE 0

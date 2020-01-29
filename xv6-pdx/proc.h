@@ -41,11 +41,6 @@ struct proc {
   pde_t* pgdir;                // Page table
   char *kstack;                // Bottom of kernel stack for this process
   enum procstate state;        // Process state
-  uint pid;                    // Process ID
-  uint uid;                    // User Identifier
-  uint gid;                    // Group Identifier
-  uint cpu_ticks_in;           // ticks when scheduled
-  uint cpu_ticks_total;        // total elapsed ticks in CPU
   struct proc *parent;         // Parent process. NULL indicates no parent
   struct trapframe *tf;        // Trap frame for current syscall
   struct context *context;     // swtch() here to run process
@@ -54,6 +49,16 @@ struct proc {
   struct file *ofile[NOFILE];  // Open files
   struct inode *cwd;           // Current directory
   char name[16];               // Process name (debugging) ** 16 bits so it's aligned **
+#ifdef CS333_P2
+  uint pid;                    // Process ID
+  uint uid;                    // User Identifier
+  uint gid;                    // Group Identifier
+  uint cpu_ticks_in;           // ticks when scheduled
+  uint cpu_ticks_total;        // total elapsed ticks in CPU
+#endif // CS333_P2
+#ifdef CS333_P3
+  struct proc* next;           // Points to next process in the state list
+#endif // CS333_P3
 };
 
 // Process memory is laid out contiguously, low addresses first:

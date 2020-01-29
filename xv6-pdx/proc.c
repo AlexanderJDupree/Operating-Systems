@@ -18,6 +18,9 @@ static char *states[] = {
 };
 
 #ifdef CS333_P3
+
+#define statecount NELEM(states)
+
 // record with head and tail pointer for constant-time access to the beginning
 // and end of a linked list of struct procs.  use with stateListAdd() and
 // stateListRemove().
@@ -25,20 +28,23 @@ struct ptrs {
   struct proc* head;
   struct proc* tail;
 };
-#endif
+#endif // CS333_P3
 
 static struct {
   struct spinlock lock;
   struct proc proc[NPROC];
+#ifdef CS333_P3
+  struct ptrs list[statecount];
+#endif // CS333_P3
 } ptable;
 
 // list management function prototypes
 #ifdef CS333_P3
 static void initProcessLists(void);
 static void initFreeList(void);
-static void stateListAdd(struct ptrs*, struct proc*);
-static int  stateListRemove(struct ptrs*, struct proc* p);
-static void assertState(struct proc*, enum procstate, const char *, int);
+//static void stateListAdd(struct ptrs*, struct proc*);
+//static int  stateListRemove(struct ptrs*, struct proc* p);
+//static void assertState(struct proc*, enum procstate, const char *, int);
 #endif
 
 static struct proc *initproc;
@@ -155,6 +161,14 @@ userinit(void)
   struct proc *p;
   extern char _binary_initcode_start[], _binary_initcode_size[];
 
+#ifdef CS333_P3
+  // Initialize State Lists, add all processes to the UNUSED list
+  acquire(&ptable.lock);
+  initProcessLists();
+  initFreeList();
+  release(&ptable.lock);
+#endif // CS333_P3
+
   p = allocproc();
 
   initproc = p;
@@ -174,8 +188,10 @@ userinit(void)
   safestrcpy(p->name, "initcode", sizeof(p->name));
   p->cwd = namei("/");
 
+#ifdef CS333_P2
   p->uid = ROOT_UID;
   p->gid = ROOT_GID;
+#endif // CS333_P2
 
   // this assignment to p->state lets other cores
   // run this process. the acquire forces the above
@@ -234,9 +250,10 @@ fork(void)
   np->parent = curproc;
   *np->tf = *curproc->tf;
 
-  // Copy UID and GID -- CS333 Project 2
+#ifdef CS333_P2
   np->uid = curproc->uid;
   np->gid = curproc->gid;
+#endif // CS333_P2
 
   // Clear %eax so that fork returns 0 in the child.
   np->tf->eax = 0;
@@ -566,14 +583,7 @@ procdumpP4(struct proc* p, const char* state)
   cprintf("\nprocdumpP3 Not yet implemented");
 }
 
-#elif defined(CS333_P3)
-// TODO for Project 3, define procdumpP3() here
-void
-procdumpP3(struct proc* p, const char* state)
-{
-  cprintf("\nprocdumpP3 Not yet implemented");
-}
-#elif defined(CS333_P2)
+#elif defined(CS333_P3) || defined(CS333_P2)
 
 static void
 dumpfield(const char* field, int field_width)
@@ -609,6 +619,13 @@ procdumpP2(struct proc* p, const char* state)
   dumpfield(itoa(p->sz, buf, 10), 8);
 
   return;
+}
+
+void
+procdumpP3(struct proc* p, const char* state)
+{
+  // Resuse Project 2 Proc dump
+  procdumpP2(p, state);
 }
 
 #elif defined(CS333_P1)
@@ -688,6 +705,7 @@ getprocs(uint max, struct uproc* utable)
   struct proc *p;
 
   acquire(&ptable.lock);
+  // TODO Traverse state lists
   for(p = ptable.proc; p < ptable.proc + NPROC && i < max; p++)
   {
     if(p->state != UNUSED && p->state != EMBRYO)
@@ -757,6 +775,7 @@ stateListAdd(struct ptrs* list, struct proc* p)
 }
 #endif
 
+/*
 #if defined(CS333_P3)
 static int
 stateListRemove(struct ptrs* list, struct proc* p)
@@ -806,6 +825,7 @@ stateListRemove(struct ptrs* list, struct proc* p)
   return 0;
 }
 #endif
+*/
 
 #if defined(CS333_P3)
 static void
@@ -844,6 +864,7 @@ initFreeList(void)
 // assertState(p, UNUSED, __FUNCTION__, __LINE__);
 // This code uses gcc preprocessor directives. For details, see
 // https://gcc.gnu.org/onlinedocs/cpp/Standard-Predefined-Macros.html
+/*
 static void
 assertState(struct proc *p, enum procstate state, const char * func, int line)
 {
@@ -853,5 +874,6 @@ assertState(struct proc *p, enum procstate state, const char * func, int line)
         states[p->state], states[state], func, line);
     panic("Error: Process state incorrect in assertState()");
 }
+*/
 #endif
 
