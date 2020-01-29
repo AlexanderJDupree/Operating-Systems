@@ -217,6 +217,7 @@ void
 consoleintr(int (*getc)(void))
 {
   int c, doprocdump = 0;
+  enum procstate list = -1;
 #ifdef PDX_XV6
   int shutdown = FALSE;
 #endif // PDX_XV6
@@ -227,6 +228,10 @@ consoleintr(int (*getc)(void))
     case C('P'):  // Process listing.
       // procdump() locks cons.lock indirectly; invoke later
       doprocdump = 1;
+      break;
+    case C('F'):  // UNUSED list dump
+      doprocdump = 1;
+      list = UNUSED;
       break;
 #ifdef PDX_XV6
     case C('D'):
@@ -265,7 +270,8 @@ consoleintr(int (*getc)(void))
     do_shutdown();
 #endif // PDX_XV6
   if(doprocdump) {
-    procdump();  // now call procdump() wo. cons.lock held
+    // If list is -1, statelist dump performs procdump
+    statelistdump(list);
   }
 }
 

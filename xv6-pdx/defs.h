@@ -131,6 +131,9 @@ int             getprocs(uint, struct uproc*);
 int             setuid(struct proc*, uint);
 int             setgid(struct proc*, uint);
 #endif // CS333_P2
+#ifdef CS333_P3
+void            statelistdump(int state);
+#endif // CS333_P3
 
 // swtch.S
 void            swtch(struct context**, struct context*);
