@@ -644,13 +644,13 @@ procdumpP1(struct proc* p, const char* state)
 
 #ifdef CS333_P3
 static void
-printpid(struct proct* p)
+printpid(struct proc* p)
 {
   cprintf("(%d)", p->pid);
 }
 
 static void
-printppid(struct proct* p)
+printppid(struct proc* p)
 {
   cprintf("(PID: %d, PPID: %d)", p->pid, (p->parent) ? p->parent->pid : p->pid);
 }
@@ -670,14 +670,14 @@ length(struct ptrs* list)
 void
 statelistdump(int state)
 {
-  switch((procstate) state)
+  switch((enum procstate) state)
   {
     case RUNNING : 
       cprintf("Ready List Processes:\n");
       dumpList(&ptable.list[RUNNING], printpid);
       break;
     case UNUSED : 
-      cprintf("Free List Size: %d", length(ptable.list[UNUSED]));
+      cprintf("Free List Size: %d\n", length(&ptable.list[UNUSED]));
       break;
     case SLEEPING : 
       cprintf("Sleep List Processes:\n");
@@ -688,7 +688,7 @@ statelistdump(int state)
       dumpList(&ptable.list[ZOMBIE], printppid);
       break;
     default:
-      procdump()
+      procdump();
   }
 }
 
@@ -743,9 +743,6 @@ procdump(void)
     }
     cprintf("\n");
   }
-#ifdef CS333_P1
-  cprintf("$ ");  // simulate shell prompt
-#endif // CS333_P1
 }
 
 #ifdef CS333_P2

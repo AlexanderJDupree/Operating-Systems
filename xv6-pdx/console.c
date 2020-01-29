@@ -272,6 +272,7 @@ consoleintr(int (*getc)(void))
   if(doprocdump) {
     // If list is -1, statelist dump performs procdump
     statelistdump(list);
+    cprintf("$ ");  // simulate shell prompt
   }
 }
 
