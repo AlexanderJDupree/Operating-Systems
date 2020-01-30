@@ -234,9 +234,9 @@ consoleintr(int (*getc)(void))
       doprocdump = 1;
       list = UNUSED;
       break;
-    case C('R'):  // RUNNING list dump
+    case C('R'):  // RUNNABLE list dump
       doprocdump = 1;
-      list = RUNNING;
+      list = RUNNABLE;
       break;
     case C('S'):  // SLEEPING list dump
       doprocdump = 1;
