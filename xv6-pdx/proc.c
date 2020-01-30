@@ -45,6 +45,8 @@ static void initFreeList(void);
 static void stateListAdd(struct ptrs*, struct proc*);
 static int  stateListRemove(struct ptrs*, struct proc* p);
 static void assertState(struct proc*, enum procstate, const char *, int);
+static void transition(enum procstate, enum procstate, struct proc* p);
+static void atom_transition(enum procstate, enum procstate, struct proc* p);
 #endif
 
 static struct proc *initproc;
@@ -105,6 +107,50 @@ myproc(void) {
 // If found, change state to EMBRYO and initialize
 // state required to run in the kernel.
 // Otherwise return 0.
+#ifdef CS333_P3
+static struct proc*
+allocproc(void)
+{
+  struct proc *p;
+  char *sp;
+
+  acquire(&ptable.lock);
+  if((p = ptable.list[UNUSED].head) == NULL) { // No unused processes
+    release(&ptable.lock); 
+    return 0;
+  }
+
+  transition(UNUSED, EMBRYO, p);
+  p->pid = nextpid++;
+  release(&ptable.lock);
+
+  // Allocate kernel stack.
+  if((p->kstack = kalloc()) == 0){
+    atom_transition(EMBRYO, UNUSED, p); // Recover from failure
+    return 0;
+  }
+  sp = p->kstack + KSTACKSIZE;
+
+  // Leave room for trap frame.
+  sp -= sizeof *p->tf;
+  p->tf = (struct trapframe*)sp;
+
+  // Set up new context to start executing at forkret,
+  // which returns to trapret.
+  sp -= 4;
+  *(uint*)sp = (uint)trapret;
+
+  sp -= sizeof *p->context;
+  p->context = (struct context*)sp;
+  memset(p->context, 0, sizeof *p->context);
+  p->context->eip = (uint)forkret;
+
+  p->start_ticks     = ticks;
+  p->cpu_ticks_in    = 0;
+  p->cpu_ticks_total = 0;
+  return p;
+}
+#else
 static struct proc*
 allocproc(void)
 {
@@ -147,27 +193,63 @@ allocproc(void)
   memset(p->context, 0, sizeof *p->context);
   p->context->eip = (uint)forkret;
 
+#ifdef CS333_P1
   p->start_ticks     = ticks;
+#endif // CS333_P1
+#ifdef CS333_P2
   p->cpu_ticks_in    = 0;
   p->cpu_ticks_total = 0;
+#endif // CS333_P2
   return p;
 }
+#endif // CS333_P3
 
 //PAGEBREAK: 32
 // Set up first user process.
+#ifdef CS333_P3
 void
 userinit(void)
 {
   struct proc *p;
   extern char _binary_initcode_start[], _binary_initcode_size[];
 
-#ifdef CS333_P3
   // Initialize State Lists, add all processes to the UNUSED list
   acquire(&ptable.lock);
   initProcessLists();
   initFreeList();
   release(&ptable.lock);
-#endif // CS333_P3
+
+  if((p = allocproc()) == NULL)
+    panic("userinit: Failed to allocate init process");
+
+  initproc = p;
+  if((p->pgdir = setupkvm()) == 0)
+    panic("userinit: out of memory?");
+  inituvm(p->pgdir, _binary_initcode_start, (int)_binary_initcode_size);
+  p->sz = PGSIZE;
+  memset(p->tf, 0, sizeof(*p->tf));
+  p->tf->cs = (SEG_UCODE << 3) | DPL_USER;
+  p->tf->ds = (SEG_UDATA << 3) | DPL_USER;
+  p->tf->es = p->tf->ds;
+  p->tf->ss = p->tf->ds;
+  p->tf->eflags = FL_IF;
+  p->tf->esp = PGSIZE;
+  p->tf->eip = 0;  // beginning of initcode.S
+
+  safestrcpy(p->name, "initcode", sizeof(p->name));
+  p->cwd = namei("/");
+
+  p->uid = ROOT_UID;
+  p->gid = ROOT_GID;
+
+  atom_transition(EMBRYO, RUNNABLE, p);
+}
+#else
+void
+userinit(void)
+{
+  struct proc *p;
+  extern char _binary_initcode_start[], _binary_initcode_size[];
 
   p = allocproc();
 
@@ -201,6 +283,7 @@ userinit(void)
   p->state = RUNNABLE;
   release(&ptable.lock);
 }
+#endif // CS333_P3
 
 // Grow current process's memory by n bytes.
 // Return 0 on success, -1 on failure.
@@ -226,6 +309,51 @@ growproc(int n)
 // Create a new process copying p as the parent.
 // Sets up stack to return as if from system call.
 // Caller must set state of returned proc to RUNNABLE.
+#ifdef CS333_P3
+int
+fork(void)
+{
+  int i;
+  uint pid;
+  struct proc *np;
+  struct proc *curproc = myproc();
+
+  // Allocate process.
+  if((np = allocproc()) == 0){
+    return -1;
+  }
+
+  // Copy process state from proc, return np to UNUSED on failure
+  if((np->pgdir = copyuvm(curproc->pgdir, curproc->sz)) == 0){
+    kfree(np->kstack);
+    np->kstack = 0;
+    atom_transition(EMBRYO, UNUSED, np);
+    return -1;
+  }
+  np->sz = curproc->sz;
+  np->parent = curproc;
+  *np->tf = *curproc->tf;
+
+  np->uid = curproc->uid;
+  np->gid = curproc->gid;
+
+  // Clear %eax so that fork returns 0 in the child.
+  np->tf->eax = 0;
+
+  for(i = 0; i < NOFILE; i++)
+    if(curproc->ofile[i])
+      np->ofile[i] = filedup(curproc->ofile[i]);
+  np->cwd = idup(curproc->cwd);
+
+  safestrcpy(np->name, curproc->name, sizeof(curproc->name));
+
+  pid = np->pid;
+
+  atom_transition(EMBRYO, RUNNABLE, np);
+
+  return pid;
+}
+#else
 int
 fork(void)
 {
@@ -273,6 +401,7 @@ fork(void)
 
   return pid;
 }
+#endif // CS333_P3
 
 // Exit the current process.  Does not return.
 // An exited process remains in the zombie state
@@ -585,18 +714,6 @@ procdumpP4(struct proc* p, const char* state)
 
 #elif defined(CS333_P3) || defined(CS333_P2)
 
-static void
-printpid(struct proc* p)
-{
-  cprintf("(%d)", p->pid);
-}
-
-static void
-printppid(struct proc* p)
-{
-  cprintf("(PID: %d, PPID: %d)", p->pid, (p->parent) ? p->parent->pid : p->pid);
-}
-
 void*
 foldr(void* (*f)(struct proc*, void*), void* acc, struct proc* list)
 {
@@ -639,11 +756,25 @@ length(struct ptrs list)
 }
 
 static void
-dumpList(struct ptrs list, void (*info)(struct proc*))
+dumpList(struct ptrs list, int showPPID)
 {
+  // Assign info function depending on if we're displaying PPID or not
+  void (*info)(struct proc*) = (showPPID) ? 
+    LAMBDA(void _(struct proc* p){
+
+      uint ppid = (p->parent) ? p->parent->pid : p->pid;
+
+      (p->next) ? cprintf("(%d, %d) -> ", p->pid, ppid) : cprintf("(%d, %d)", p->pid, ppid);
+    }) :
+    LAMBDA(void _(struct proc* p){
+      (p->next) ? cprintf("(%d) -> ", p->pid) : cprintf("(%d)", p->pid);
+    });
+
   acquire(&ptable.lock);
-  map(info, list.head);
+  map(info, list.head); // Apply info to each node in the list
   release(&ptable.lock);
+
+  cputc('\n');
 }
 
 void
@@ -651,20 +782,20 @@ statelistdump(int state)
 {
   switch((enum procstate) state)
   {
-    case RUNNING : 
-      cprintf("Ready List Processes:\n");
-      dumpList(ptable.list[RUNNING], printpid);
-      break;
-    case UNUSED : 
-      cprintf("Free List Size: %d\n", length(ptable.list[UNUSED]));
+    case RUNNABLE : 
+      cprintf("\nReady List Processes:\n");
+      dumpList(ptable.list[RUNNABLE], 0);
       break;
     case SLEEPING : 
-      cprintf("Sleep List Processes:\n");
-      dumpList(ptable.list[SLEEPING], printpid);
+      cprintf("\nSleep List Processes:\n");
+      dumpList(ptable.list[SLEEPING], 0);
       break;
     case ZOMBIE :
-      cprintf("Zombie List Processes:\n");
-      dumpList(ptable.list[ZOMBIE], printppid);
+      cprintf("\nZombie List Processes:\n");
+      dumpList(ptable.list[ZOMBIE], 1);
+      break;
+    case UNUSED : 
+      cprintf("\nFree List Size: %d\n", length(ptable.list[UNUSED]));
       break;
     default:
       procdump();
@@ -945,7 +1076,6 @@ initFreeList(void)
 // assertState(p, UNUSED, __FUNCTION__, __LINE__);
 // This code uses gcc preprocessor directives. For details, see
 // https://gcc.gnu.org/onlinedocs/cpp/Standard-Predefined-Macros.html
-/*
 static void
 assertState(struct proc *p, enum procstate state, const char * func, int line)
 {
@@ -955,6 +1085,29 @@ assertState(struct proc *p, enum procstate state, const char * func, int line)
         states[p->state], states[state], func, line);
     panic("Error: Process state incorrect in assertState()");
 }
-*/
 #endif
 
+#if defined(CS333_P3)
+static void
+transition(enum procstate A, enum procstate B, struct proc* p)
+{
+  if (stateListRemove(&ptable.list[A], p) == -1) {
+    panic("Error: Failed to remove process from state list in transition()");
+  }
+  assertState(p, A, __FUNCTION__, __LINE__);
+  
+  p->state = B;
+
+  stateListAdd(&ptable.list[B], p);
+}
+
+static void
+atom_transition(enum procstate A, enum procstate B, struct proc* p)
+{
+  acquire(&ptable.lock);
+  transition(A, B, p);
+  release(&ptable.lock);
+}
+
+
+#endif // CS333_P3

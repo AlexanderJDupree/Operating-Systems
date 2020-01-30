@@ -37,7 +37,7 @@ enum procstate { UNUSED, EMBRYO, SLEEPING, RUNNABLE, RUNNING, ZOMBIE };
 // Per-process state
 struct proc {
   uint sz;                     // Size of process memory (bytes)
-  uint start_ticks;            // Ticks at process creation
+  uint pid;                    // Process ID
   pde_t* pgdir;                // Page table
   char *kstack;                // Bottom of kernel stack for this process
   enum procstate state;        // Process state
@@ -49,8 +49,10 @@ struct proc {
   struct file *ofile[NOFILE];  // Open files
   struct inode *cwd;           // Current directory
   char name[16];               // Process name (debugging) ** 16 bits so it's aligned **
+#ifdef CS333_P1
+  uint start_ticks;            // Ticks at process creation
+#endif // CS333_P1
 #ifdef CS333_P2
-  uint pid;                    // Process ID
   uint uid;                    // User Identifier
   uint gid;                    // Group Identifier
   uint cpu_ticks_in;           // ticks when scheduled
