@@ -45,15 +45,16 @@ static void initFreeList(void);
 static void stateListAdd(struct ptrs*, struct proc*);
 static int  stateListRemove(struct ptrs*, struct proc* p);
 static void assertState(struct proc*, enum procstate, const char *, int);
+
+
 static void transition(enum procstate, enum procstate, struct proc* p);
 static void atom_transition(enum procstate, enum procstate, struct proc* p);
 
 // Higher-Order Function prototypes
-//static void* foldr(void* (*f)(struct proc*, void*), void* acc, struct proc* list);
+static void* foldr(void* (*f)(struct proc*, void*), void* acc, struct proc* list);
 static void* foldl(void* (*f)(void*, struct proc*), void* acc, struct proc* list);
 static void  map(void (*f)(struct proc*), struct proc* list);
 #endif
-
 
 static struct proc *initproc;
 
@@ -127,6 +128,7 @@ allocproc(void)
   }
 
   transition(UNUSED, EMBRYO, p);
+
   p->pid = nextpid++;
   release(&ptable.lock);
 
@@ -329,10 +331,11 @@ fork(void)
     return -1;
   }
 
-  // Copy process state from proc, return np to UNUSED on failure
+  // Copy process state from proc
   if((np->pgdir = copyuvm(curproc->pgdir, curproc->sz)) == 0){
     kfree(np->kstack);
     np->kstack = 0;
+    // Page alloc failed, transition back to unused
     atom_transition(EMBRYO, UNUSED, np);
     return -1;
   }
@@ -455,11 +458,10 @@ exit(void)
 
   transition(RUNNING, ZOMBIE, curproc);
 
-#ifdef PDX_XV6
   curproc->sz = 0;
-#endif // PDX_XV6
 
-  sched();
+  sched(); // Jump into scheduler, never to return
+
   panic("zombie exit");
 }
 #else
@@ -518,36 +520,42 @@ int
 wait(void)
 {
   struct proc *p;
-  int havekids;
-  uint pid;
   struct proc *curproc = myproc();
+  uint pid = 0;
+  int havekids = 0;
 
   acquire(&ptable.lock);
   for(;;){
-    // Scan through table looking for exited children.
-    havekids = 0;
-    // TODO use state list traversal
-    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-      if(p->parent != curproc)
-        continue;
-      havekids = 1;
-      if(p->state == ZOMBIE){ // Reap child
-        pid = p->pid;
-        kfree(p->kstack);
-        p->kstack = 0;
-        freevm(p->pgdir);
-        p->pid = 0;
-        p->parent = 0;
-        p->name[0] = 0;
-        p->killed = 0;
 
-        transition(ZOMBIE, UNUSED, p);
+    // Search for children in all state lists except for UNUSED
+    for(enum procstate state = EMBRYO; state <= ZOMBIE; ++state)
+    {
+      p = ptable.list[state].head;
+      while(p != NULL)
+      {
+        if(p->parent) 
+        { 
+          havekids = 1;
+          if(p->state == ZOMBIE) // Reap child
+          {
+            pid = p->pid;
+            kfree(p->kstack);
+            p->kstack = 0;
+            freevm(p->pgdir);
+            p->pid = 0;
+            p->parent = 0;
+            p->name[0] = 0;
+            p->killed = 0;
 
-        release(&ptable.lock);
-        return pid;
+            transition(ZOMBIE, UNUSED, p);
+
+            release(&ptable.lock);
+            return pid;
+          }
+        }
+        p = p->next;
       }
     }
-
     // No point waiting if we don't have any children.
     if(!havekids || curproc->killed){
       release(&ptable.lock);
@@ -850,12 +858,12 @@ sleep(void *chan, struct spinlock *lk)
 static void
 wakeup1(void *chan)
 {
-  struct proc *p;
-
-  // TODO use state list traversal
-  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++)
-    if(p->state == SLEEPING && p->chan == chan)
+  // We already have the lock, do not acquire again
+  map( LAMBDA(void _(struct proc* p){
+    if(p->chan == chan){
       transition(SLEEPING, RUNNABLE, p);
+    }
+  } ), ptable.list[SLEEPING].head);
 }
 #else
 static void
@@ -890,14 +898,20 @@ kill(int pid)
   struct proc *p;
 
   acquire(&ptable.lock);
-  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-    if(p->pid == pid){
-      p->killed = 1;
-      // Wake process from sleep if necessary.
-      if(p->state == SLEEPING)
-        transition(SLEEPING, RUNNABLE, p);
-      release(&ptable.lock);
-      return 0;
+  for(enum procstate state = EMBRYO; state <= ZOMBIE; ++state)
+  {
+    p = ptable.list[state].head;
+    while(p != NULL)
+    {
+      if(p->pid == pid){
+        p->killed = 1;
+        // Wake process from sleep if necessary.
+        if(p->state == SLEEPING)
+          transition(SLEEPING, RUNNABLE, p);
+        release(&ptable.lock);
+        return 0;
+      }
+      p = p->next;
     }
   }
   release(&ptable.lock);
@@ -940,7 +954,6 @@ procdumpP4(struct proc* p, const char* state)
 
 #elif defined(CS333_P3) || defined(CS333_P2)
 
-/*
 static void*
 foldr(void* (*f)(struct proc*, void*), void* acc, struct proc* list)
 {
@@ -948,7 +961,6 @@ foldr(void* (*f)(struct proc*, void*), void* acc, struct proc* list)
 
   return f(list, foldr(f, acc, list->next));
 }
-*/
 
 static void*
 foldl(void* (*f)(void*, struct proc*), void* acc, struct proc* list)
@@ -962,10 +974,10 @@ foldl(void* (*f)(void*, struct proc*), void* acc, struct proc* list)
 static void
 map(void (*f)(struct proc*), struct proc* list)
 {
-  if(!list) { return; }
-
-  f(list); // Apply function
-  return map(f, list->next); // Traverse list
+  foldl(LAMBDA(void* _(void* acc, struct proc* p){
+    f(p);
+    return acc;
+  }), NULL, list);
 }
 
 static uint
@@ -974,7 +986,7 @@ length(struct ptrs list)
   uint length = 0;
   acquire(&ptable.lock);
 
-  foldl( LAMBDA(void* _(void* sum, struct proc* p){
+  foldr( LAMBDA(void* _(struct proc* p, void* sum){
     *((uint*) sum) += 1;
     return sum;
   }), &length, list.head);
@@ -1139,15 +1151,37 @@ procdump(void)
 }
 
 #ifdef CS333_P2
-
 int
 getprocs(uint max, struct uproc* utable)
 {
   int i = 0;
+  acquire(&ptable.lock);
+#ifdef CS333_P3
+  for(enum procstate state = SLEEPING; state <= ZOMBIE; ++state)
+  {
+    map(LAMBDA(void _(struct proc* p){
+
+      struct uproc* uproc = utable + i++;
+
+      uproc->pid  = p->pid;
+      uproc->uid  = p->uid;
+      uproc->gid  = p->gid;
+      uproc->size = p->sz;
+
+      // If parent exists, set ppid to their pid, else process pid
+      uproc->ppid = (p->parent) ? p->parent->pid : p->pid;
+
+      uproc->elapsed_ticks   = ticks - p->start_ticks;
+      uproc->cpu_ticks_total = p->cpu_ticks_total;
+
+      safestrcpy(uproc->name, p->name, sizeof(uproc->name));
+      safestrcpy(uproc->state, states[p->state], sizeof(uproc->state));
+
+    }), ptable.list[state].head);
+  }
+#else
   struct proc *p;
 
-  acquire(&ptable.lock);
-  // TODO Traverse state lists
   for(p = ptable.proc; p < ptable.proc + NPROC && i < max; p++)
   {
     if(p->state != UNUSED && p->state != EMBRYO)
@@ -1169,6 +1203,7 @@ getprocs(uint max, struct uproc* utable)
       safestrcpy(uproc->state, states[p->state], sizeof(uproc->state));
     }
   }
+#endif // CS333_P3
   release(&ptable.lock);
 
   return i;
@@ -1322,6 +1357,8 @@ transition(enum procstate A, enum procstate B, struct proc* p)
   if (stateListRemove(&ptable.list[A], p) == -1) {
     panic("Error: Failed to remove process from state list in transition()");
   }
+  // TODO these macros will only every display this function and line number
+  // We would like to have to display funciton and line number of calling function
   assertState(p, A, __FUNCTION__, __LINE__);
   
   p->state = B;
