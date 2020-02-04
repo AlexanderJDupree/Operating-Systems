@@ -1018,6 +1018,31 @@ dumpList(struct ptrs list, int showPPID)
   cputc('\n');
 }
 
+static void
+printListStats()
+{
+  int i, count, total = 0;
+  struct proc *p;
+
+  acquire(&ptable.lock);
+  for (i=UNUSED; i<=ZOMBIE; i++) {
+    count = 0;
+    p = ptable.list[i].head;
+    while (p != NULL) {
+      count++;
+      p = p->next;
+    }
+    cprintf("\n%s list has ", states[i]);
+    if (count < 10) cprintf(" ");  // line up columns
+    cprintf("%d processes", count);
+    total += count;
+  }
+  release(&ptable.lock);
+  cprintf("\nTotal on lists is: %d. NPROC = %d. %s",
+      total, NPROC, (total == NPROC) ? "Congratulations!\n" : "Bummer\n");
+  return;
+}
+
 void
 statelistdump(int state)
 {
@@ -1037,6 +1062,9 @@ statelistdump(int state)
       break;
     case UNUSED : 
       cprintf("\nFree List Size: %d\n", length(ptable.list[UNUSED]));
+      break;
+    case -2 :
+      printListStats();
       break;
     default:
       procdump();
@@ -1377,3 +1405,4 @@ __atom_transition(enum procstate A, enum procstate B, struct proc* p, const char
 }
 
 #endif // CS333_P3
+

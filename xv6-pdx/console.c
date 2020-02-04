@@ -246,6 +246,13 @@ consoleintr(int (*getc)(void))
       doprocdump = 1;
       list = ZOMBIE;
       break;
+    case C('L'):
+      doprocdump = 1;
+      list = -2;
+      break;
+    case C('C'):
+      // TODO implement kill logic here
+      break;
 #endif // CS333_P3
 #ifdef PDX_XV6
     case C('D'):
@@ -285,6 +292,7 @@ consoleintr(int (*getc)(void))
 #endif // PDX_XV6
   if(doprocdump) {
     // If list is -1, statelist dump performs procdump
+    // If list is -2, statelistdump performs statlist stats
     statelistdump(list);
     cprintf("$ ");  // simulate shell prompt
   }
