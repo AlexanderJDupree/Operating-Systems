@@ -20,7 +20,6 @@ static char *states[] = {
 #ifdef CS333_P3
 
 #define statecount NELEM(states)
-
 // record with head and tail pointer for constant-time access to the beginning
 // and end of a linked list of struct procs.  use with stateListAdd() and
 // stateListRemove().
@@ -47,8 +46,10 @@ static int  stateListRemove(struct ptrs*, struct proc* p);
 static void assertState(struct proc*, enum procstate, const char *, int);
 
 
-static void transition(enum procstate, enum procstate, struct proc* p);
-static void atom_transition(enum procstate, enum procstate, struct proc* p);
+#define transition(A, B, p) __transition(A, B, p, __FUNCTION__, __LINE__)
+#define atom_transition(A, B, p) __atom_transition(A, B, p, __FUNCTION__, __LINE__)
+static void __transition(enum procstate, enum procstate, struct proc* p, const char*, int);
+static void __atom_transition(enum procstate, enum procstate, struct proc* p, const char*, int);
 
 // Higher-Order Function prototypes
 static void* foldr(void* (*f)(struct proc*, void*), void* acc, struct proc* list);
@@ -1352,14 +1353,15 @@ assertState(struct proc *p, enum procstate state, const char * func, int line)
 
 #if defined(CS333_P3)
 static void
-transition(enum procstate A, enum procstate B, struct proc* p)
+__transition(enum procstate A, enum procstate B, struct proc* p, const char* func, int line)
 {
   if (stateListRemove(&ptable.list[A], p) == -1) {
-    panic("Error: Failed to remove process from state list in transition()");
+    cprintf("\n__transition: Called from %s, line %d\n", func, line);
+    panic("Error: Failed to remove process from state list in transition");
   }
   // TODO these macros will only every display this function and line number
   // We would like to have to display funciton and line number of calling function
-  assertState(p, A, __FUNCTION__, __LINE__);
+  assertState(p, A, func, line);
   
   p->state = B;
 
@@ -1367,12 +1369,11 @@ transition(enum procstate A, enum procstate B, struct proc* p)
 }
 
 static void
-atom_transition(enum procstate A, enum procstate B, struct proc* p)
+__atom_transition(enum procstate A, enum procstate B, struct proc* p, const char* func, int line)
 {
   acquire(&ptable.lock);
-  transition(A, B, p);
+  __transition(A, B, p, func, line);
   release(&ptable.lock);
 }
-
 
 #endif // CS333_P3
