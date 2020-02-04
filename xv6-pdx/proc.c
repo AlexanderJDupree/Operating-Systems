@@ -534,7 +534,7 @@ wait(void)
       p = ptable.list[state].head;
       while(p != NULL)
       {
-        if(p->parent) 
+        if(p->parent == curproc) 
         { 
           havekids = 1;
           if(p->state == ZOMBIE) // Reap child
