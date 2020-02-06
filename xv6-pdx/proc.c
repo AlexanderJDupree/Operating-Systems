@@ -945,6 +945,45 @@ kill(int pid)
 // Runs when user types ^P on console.
 // No lock to avoid wedging a stuck machine further.
 
+#if defined(CS333_P2)
+
+static void
+dumpfield(const char* field, int field_width)
+{
+  for(int i = 0; field[i] && field_width >= 0; ++i)
+  {
+    --field_width;
+    cputc(field[i]);
+  }
+  // Fill with spaces
+  while(--field_width >= 0) { cputc(' '); }
+}
+
+void
+procdumpP2(struct proc* p, const char* state)
+{
+  // If parent is NULL - Set ppid to pid
+  int ppid = (p->parent) ? p->parent->pid : p->pid;
+
+  double cpu = p->cpu_ticks_total / 1000.0f;
+  double elapsed = (ticks - p->start_ticks) / 1000.0f;
+
+  char buf[32]; // 32 digits can more than hold any 32 bit number
+
+  dumpfield(itoa(p->pid, buf, 10), 8);
+  dumpfield(p->name, 13);
+  dumpfield(itoa(p->uid, buf, 10), 11);
+  dumpfield(itoa(p->gid, buf, 10), 8);
+  dumpfield(itoa(ppid, buf, 10), 8);
+  dumpfield(dtoa(elapsed, buf, 3), 10);
+  dumpfield(dtoa(cpu, buf, 3), 6);
+  dumpfield(state, 8);
+  dumpfield(itoa(p->sz, buf, 10), 8);
+
+  return;
+}
+#endif // CS333_P2
+
 #if defined(CS333_P4)
 // TODO for Project 4, define procdumpP4() here
 void
@@ -953,33 +992,7 @@ procdumpP4(struct proc* p, const char* state)
   cprintf("\nprocdumpP3 Not yet implemented");
 }
 
-#elif defined(CS333_P3) || defined(CS333_P2)
-
-static void*
-foldr(void* (*f)(struct proc*, void*), void* acc, struct proc* list)
-{
-  if(!list) { return acc; }
-
-  return f(list, foldr(f, acc, list->next));
-}
-
-static void*
-foldl(void* (*f)(void*, struct proc*), void* acc, struct proc* list)
-{
-  if(!list) { return acc; }
-
-  // Tail-recursive
-  return foldl(f, f(acc, list), list->next);
-}
-
-static void
-map(void (*f)(struct proc*), struct proc* list)
-{
-  foldl(LAMBDA(void* _(void* acc, struct proc* p){
-    f(p);
-    return acc;
-  }), NULL, list);
-}
+#elif defined(CS333_P3)
 
 static uint
 length(struct ptrs list)
@@ -1071,48 +1084,13 @@ statelistdump(int state)
   }
 }
 
-static void
-dumpfield(const char* field, int field_width)
-{
-  for(int i = 0; field[i] && field_width >= 0; ++i)
-  {
-    --field_width;
-    cputc(field[i]);
-  }
-  // Fill with spaces
-  while(--field_width >= 0) { cputc(' '); }
-}
-
-void
-procdumpP2(struct proc* p, const char* state)
-{
-  // If parent is NULL - Set ppid to pid
-  int ppid = (p->parent) ? p->parent->pid : p->pid;
-
-  double cpu = p->cpu_ticks_total / 1000.0f;
-  double elapsed = (ticks - p->start_ticks) / 1000.0f;
-
-  char buf[32]; // 32 digits can more than hold any 32 bit number
-
-  dumpfield(itoa(p->pid, buf, 10), 8);
-  dumpfield(p->name, 13);
-  dumpfield(itoa(p->uid, buf, 10), 11);
-  dumpfield(itoa(p->gid, buf, 10), 8);
-  dumpfield(itoa(ppid, buf, 10), 8);
-  dumpfield(dtoa(elapsed, buf, 3), 10);
-  dumpfield(dtoa(cpu, buf, 3), 6);
-  dumpfield(state, 8);
-  dumpfield(itoa(p->sz, buf, 10), 8);
-
-  return;
-}
-
 void
 procdumpP3(struct proc* p, const char* state)
 {
   // Resuse Project 2 Proc dump
   procdumpP2(p, state);
 }
+
 
 #elif defined(CS333_P1)
 // TODO for Project 1, define procdumpP1() here
@@ -1127,6 +1105,7 @@ procdumpP1(struct proc* p, const char* state)
   return;
 }
 #endif
+
 
 void
 procdump(void)
@@ -1185,30 +1164,6 @@ getprocs(uint max, struct uproc* utable)
 {
   int i = 0;
   acquire(&ptable.lock);
-#ifdef CS333_P3
-  for(enum procstate state = SLEEPING; state <= ZOMBIE; ++state)
-  {
-    map(LAMBDA(void _(struct proc* p){
-
-      struct uproc* uproc = utable + i++;
-
-      uproc->pid  = p->pid;
-      uproc->uid  = p->uid;
-      uproc->gid  = p->gid;
-      uproc->size = p->sz;
-
-      // If parent exists, set ppid to their pid, else process pid
-      uproc->ppid = (p->parent) ? p->parent->pid : p->pid;
-
-      uproc->elapsed_ticks   = ticks - p->start_ticks;
-      uproc->cpu_ticks_total = p->cpu_ticks_total;
-
-      safestrcpy(uproc->name, p->name, sizeof(uproc->name));
-      safestrcpy(uproc->state, states[p->state], sizeof(uproc->state));
-
-    }), ptable.list[state].head);
-  }
-#else
   struct proc *p;
 
   for(p = ptable.proc; p < ptable.proc + NPROC && i < max; p++)
@@ -1232,7 +1187,6 @@ getprocs(uint max, struct uproc* utable)
       safestrcpy(uproc->state, states[p->state], sizeof(uproc->state));
     }
   }
-#endif // CS333_P3
   release(&ptable.lock);
 
   return i;
@@ -1402,6 +1356,32 @@ __atom_transition(enum procstate A, enum procstate B, struct proc* p, const char
   acquire(&ptable.lock);
   __transition(A, B, p, func, line);
   release(&ptable.lock);
+}
+
+static void*
+foldr(void* (*f)(struct proc*, void*), void* acc, struct proc* list)
+{
+  if(!list) { return acc; }
+
+  return f(list, foldr(f, acc, list->next));
+}
+
+static void*
+foldl(void* (*f)(void*, struct proc*), void* acc, struct proc* list)
+{
+  if(!list) { return acc; }
+
+  // Tail-recursive
+  return foldl(f, f(acc, list), list->next);
+}
+
+static void
+map(void (*f)(struct proc*), struct proc* list)
+{
+  foldl(LAMBDA(void* _(void* acc, struct proc* p){
+    f(p);
+    return acc;
+  }), NULL, list);
 }
 
 #endif // CS333_P3
