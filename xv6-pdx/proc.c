@@ -697,7 +697,9 @@ scheduler(void)
       c->proc = p;
       switchuvm(p);
       p->state = RUNNING;
+#ifdef CS333_P2
       p->cpu_ticks_in = ticks;
+#endif // CS333_P2
       swtch(&(c->scheduler), p->context);
       switchkvm();
 
@@ -739,7 +741,9 @@ sched(void)
   if(readeflags()&FL_IF)
     panic("sched interruptible");
 
+#ifdef CS333_P2
   p->cpu_ticks_total += (ticks - p->cpu_ticks_in);
+#endif // CS333_P2
 
   intena = mycpu()->intena;
   swtch(&p->context, mycpu()->scheduler);
@@ -747,6 +751,7 @@ sched(void)
 }
 
 // Give up the CPU for one scheduling round.
+#ifdef CS333_P3
 void
 yield(void)
 {
@@ -757,6 +762,18 @@ yield(void)
   sched();
   release(&ptable.lock);
 }
+#else
+void
+yield(void)
+{
+  struct proc *curproc = myproc();
+
+  acquire(&ptable.lock);  //DOC: yieldlock
+  curproc->state = RUNNABLE;
+  sched();
+  release(&ptable.lock);
+}
+#endif // CS333_P3
 
 // A fork child's very first scheduling by scheduler()
 // will swtch here.  "Return" to user space.
