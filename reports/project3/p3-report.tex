@@ -114,11 +114,11 @@
   of the kernels process state lists and debug console commands. 
   Test cases follow closely those outlined in the rubric. \hfill \break
   
-  \noindent\textbf{Test Case:} \emph{Initialization of \code{UNUSED} list and CTRL+F console interrupt}
+  \noindent\textbf{Test Case:} \emph{Initialization and use of \code{UNUSED} list and CTRL+F console interrupt}
   
   \noindent\textbf{Assertions:}
   \begin{enumerate}[]
-  \item \code{UNUSED} list is correctly initialized after XV6 boots
+  \item \code{UNUSED} list is correctly initialized after Xv6 boots
   \item \code{UNUSED} list is correctly updated when a process is allocated and deallocated
   \item CTRL+F correctly shows the number of \code{UNUSED} processes.
   \end{enumerate}  
@@ -127,17 +127,59 @@
   
   \begin{figure}[h!]
 	\centering
-	\includegraphics[width=1\linewidth]{compilation1-usertests1.png}
-	\caption[img]{Compilation and boot with CS333\_PROJECT set to 0 and execution of \code{usertests}}
+	\includegraphics[width=1\linewidth]{unused-list1.png}
+	\caption[img]{Checking free list size after boot, creating two procsses, re-checking list size, killing the two processes, final list size check}
 	\label{fig:P1compileP0-1}
   \end{figure}
 
-  The command \code{grep "CS333\_PROJECT ?=" Makefile} shows that the CS333\_PROJECT macro is set to 0.
-  The following command \code{make clean run} demonstrates that the code correctly compiles and the kernel successfully boots. 
-  Furthermore, the commands were executed within seconds of each other, indicating that
-  tampering is not a possibility. Lastly, we can see that the execution of \code{usertests}
-  is initiated in the same session, and Figure 2 shows that the tests run to completion and 
-  all tests pass. \\
+  After Xv6 boots we immediately use CTRL+P to display init and sh processes, then we 
+  use CTRL+F to print out the number of processes in the \code{UNUSED} list. Since the 
+  max number of procs is 64, and there are 2 used processes after startup, we can conclude
+  that 62 is the correct number of processes in the \code{UNUSED} list. This proves our
+  first assertion that the \code{UNUSED} list is correclty initialized after boot to be true. 
+  
+  Next, we create 2 new background processes with \code{loopforever 2 \&}. 
+  The program \code{loopforever} is a simple user program that, when given an integer N, will
+  create N-1 children processes that will loop forever, after which the parent itself will also 
+  loop forever. After creating the processes we use the same sequence of CTRL+P to display 
+  all used processes and CTRL+F to get the current length of the \code{UNUSED} list. Since, 
+  after creating 2 more processes, the length of the \code{UNUSED} list is 60 we can conclude
+  that the \code{UNUSED} list is correctly updated after process allocation.
+
+  Lastly, we kill the newly created processes and then use CTRL+P and CTRL+F to get the 
+  state of the operation system. The bottom of Figure 5 shows that after killing the 
+  processes the size of the free list is once again 62. This demonstrates that the 
+  \code{UNUSED} list is being correctly updated after a process is deallocated. \\
+
+  \pagebreak
+
+  \noindent\textbf{Test Case:} \emph{\code{RUNNABLE} list, round-robin scheduling, and CTRL+R console interrupt}
+  
+  \noindent\textbf{Assertions:}
+  \begin{enumerate}[]
+  \item \code{RUNNABLE} list is correctly updated to contain all \code{RUNNABLE} processes
+  \item Round-Robin scheduling is maintained
+  \item CTRL+R correctly shows the current order of the \code{RUNNABLE} list.
+  \end{enumerate}  
+  
+  \noindent\textbf{Status:} \textcolor{ForestGreen}{\textbf{PASS}}
+  
+  \begin{figure}[h!]
+	\centering
+	\includegraphics[width=1\linewidth]{round-robin.png}
+	\caption[img]{Creating 15 background processes and holding down CTRL+R}
+	\label{fig:P1compileP0-1}
+  \end{figure}
+
+  For this test we use the command \code{loopforever 15 \&} to instantiate 15 background
+  processes that will increment a counter variable in an infinite loop. After we create 
+  processes we use CTRL+P to show that all our processes are either in the \code{RUNNABLE} 
+  or \code{RUNNING} states. After which, we hold down CTRL+R to display the current order 
+  of the \code{RUNNABLE} list. At first, the red highlighted processes are at the head of the 
+  list. Then, after the interrupt regisers again we can see the same sequence of processes
+  is now at the back of the list and the green highlighted processes have moved toward 
+  the front of the list. This demonstrates that the round-robin scheduling is being 
+  maintained.
 
 \ifdefined \LF
 } % large print end
