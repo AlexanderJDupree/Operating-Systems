@@ -217,7 +217,9 @@ void
 consoleintr(int (*getc)(void))
 {
   int c, doprocdump = 0;
+#ifdef CS333_P3
   enum procstate list = -1;
+#endif // CS333_P3
 #ifdef PDX_XV6
   int shutdown = FALSE;
 #endif // PDX_XV6
@@ -293,7 +295,11 @@ consoleintr(int (*getc)(void))
   if(doprocdump) {
     // If list is -1, statelist dump performs procdump
     // If list is -2, statelistdump performs statlist stats
+#ifdef CS333_P3
     statelistdump(list);
+#else
+    procdump();
+#endif // CS333_P3
     cprintf("$ ");  // simulate shell prompt
   }
 }
