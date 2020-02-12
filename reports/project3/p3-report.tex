@@ -179,7 +179,37 @@
   list. Then, after the interrupt regisers again we can see the same sequence of processes
   is now at the back of the list and the green highlighted processes have moved toward 
   the front of the list. This demonstrates that the round-robin scheduling is being 
-  maintained.
+  maintained.\\
+
+  \noindent\textbf{Test Case:} \emph{\code{SLEEPING} list and CTRL+S console interrupt}
+  
+  \noindent\textbf{Assertions:}
+  \begin{enumerate}[]
+  \item \code{SLEEPING} list is correctly updated when a process sleeps and is woken up.
+  \item CTRL+S correctly displays all \code{SLEEPING} processes
+  \end{enumerate}  
+  
+  \noindent\textbf{Status:} \textcolor{ForestGreen}{\textbf{PASS}}
+  
+  \begin{figure}[h!]
+	\centering
+	\includegraphics[width=1\linewidth]{sleeptest.png}
+	\caption[img]{Running loopforever with parent asleep, and resulting sleep list after child exits}
+	\label{fig:P1compileP0-1}
+  \end{figure}
+
+  To demonstrate that the \code{SLEEPING} list is being properly maintained we first run
+  the command \code{loopforever 3 --wait \&}. The \code{--wait} flag will tell the 
+  parent process to wait (and thus go to sleep) for its 2 children. We can see that 
+  after using CTRL+P and CTRL+S that the parent process, with a PID of 4, is indeed asleep, and is at 
+  the back of the sleep list. After killing the parents children the parent will be woken 
+  up and then start its infinite loop. We can see this in Figure 7, the parent process is 
+  in the 'run' state and is no longer on the sleep list processes. Furthermore, when we kill
+  the parent process the \code{init} process will be awoken to deal with the Zombie and then
+  placed back onto the \code{SLEEPING} list. This is proven to be true at the bottom of 
+  Figure 7, since we can see that the init process (PID 1) is now at the back of the list. 
+  Lastly, this is also further evidence that the wait system call moves the reaped children
+  back to the \code{UNUSED} list, since the child processes appear in CTRL+P interrupt.
 
 \ifdefined \LF
 } % large print end
