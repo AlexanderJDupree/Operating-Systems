@@ -211,6 +211,52 @@
   Lastly, this is also further evidence that the wait system call moves the reaped children
   back to the \code{UNUSED} list, since the child processes appear in CTRL+P interrupt.
 
+  \pagebreak
+
+  \noindent\textbf{Test Case:} \emph{Process death, \code{ZOMBIE} list and CTRL+Z interrupt}
+  
+  \noindent\textbf{Assertions:}
+  \begin{enumerate}[]
+  \item kill() correctly moves processes to the \code{ZOMBIE} list
+  \item exit() correctly moves processes to the \code{ZOMBIE} list
+  \item init will reap orphaned children if the parent is killed
+  \item CTRL+Z correctly displays all processes on the \code{ZOMBIE} list along with their PPIDs
+  \end{enumerate}  
+  
+  \noindent\textbf{Status:} \textcolor{ForestGreen}{\textbf{PASS}}
+  
+  \begin{figure}[h!]
+	\centering
+  \includegraphics[width=1\linewidth]{processdeath1.png}
+	\caption[img]{Using loopforever, kill, and CTRL+Z to demonstrate process death}
+	\label{fig:P1compileP0-1}
+  \end{figure}
+
+  \begin{figure}[h!]
+	\centering
+  \includegraphics[width=1\linewidth]{processdeath2.png}
+	\caption[img]{Using loopforever with the \code{--child\_exit} option}
+	\label{fig:P1compileP0-1}
+  \end{figure}
+
+  \pagebreak
+
+  Figure 8 shows we test that the \code{ZOMBIE} list is being correctly updated after 
+  using kill, and that orphans are being properly handled. At the top of Figure 8
+  we use \code{loopforever 5 \&} to start 5 background processes (1 parent and four children), 
+  then we use CTRL+P to show the processes and their states and then CTRL+Z to display the 
+  zombie. As expected, since there are no zombie processes yet, CTRL+Z doesn't displa any 
+  information. Next, we kill all the child processes, and then use CTRL+P again. As expected
+  kill moves the process onto the \code{ZOMBIE} list. Furthermore, when we use CTRL+Z
+  all the killed processes are displayed, along with their parents process ID. Lastly, 
+  we kill the parent process which will wake up \code{init} to reap the process and its children
+  causing it to print \code{"zombie!"} one time for each of the reaped processes. 
+
+  Figure 9 performs the same test as Figure 8, however we use loopforever with the 
+  \code{--child\_exit} option. This will direct the forked child processes to use the 
+  \code{exit()} system call instead of execute an infinite loop. As such, we can see 
+  that \code{exit()} does properly place the processes on the \code{ZOMBIE} list. 
+
 \ifdefined \LF
 } % large print end
 \fi
