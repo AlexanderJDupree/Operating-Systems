@@ -46,9 +46,13 @@ static int  stateListRemove(struct ptrs*, struct proc* p);
 static void assertState(struct proc*, enum procstate, const char *, int);
 
 
+// Macros record the function and line for the calling functions
 #define transition(A, B, p) __transition(A, B, p, __FUNCTION__, __LINE__)
 #define atom_transition(A, B, p) __atom_transition(A, B, p, __FUNCTION__, __LINE__)
+
+// transition assumes the lock is already held when it manipulates the state lists
 static void __transition(enum procstate, enum procstate, struct proc* p, const char*, int);
+// atom_transition will acquire ptable lock then call transition
 static void __atom_transition(enum procstate, enum procstate, struct proc* p, const char*, int);
 
 // Higher-Order Function prototypes
@@ -807,14 +811,8 @@ sleep(void *chan, struct spinlock *lk)
   if(p == 0)
     panic("sleep");
 
-  // Must acquire ptable.lock in order to
-  // change p->state and then call sched.
-  // Once we hold ptable.lock, we can be
-  // guaranteed that we won't miss any wakeup
-  // (wakeup runs with ptable.lock locked),
-  // so it's okay to release lk.
-  if(lk != &ptable.lock){  //DOC: sleeplock0
-    acquire(&ptable.lock);  //DOC: sleeplock1
+  if(lk != &ptable.lock){  
+    acquire(&ptable.lock); 
     if (lk) release(lk);
   }
   // Go to sleep.
@@ -828,7 +826,7 @@ sleep(void *chan, struct spinlock *lk)
   p->chan = 0;
 
   // Reacquire original lock.
-  if(lk != &ptable.lock){  //DOC: sleeplock2
+  if(lk != &ptable.lock){  
     release(&ptable.lock);
     if (lk) acquire(lk);
   }
@@ -1386,6 +1384,7 @@ foldr(void* (*f)(struct proc*, void*), void* acc, struct proc* list)
 static void*
 foldl(void* (*f)(void*, struct proc*), void* acc, struct proc* list)
 {
+  // TODO, figure out a way to conduct early termination of the fold
   if(!list) { return acc; }
 
   // Tail-recursive
@@ -1402,4 +1401,3 @@ map(void (*f)(struct proc*), struct proc* list)
 }
 
 #endif // CS333_P3
-
