@@ -35,6 +35,10 @@ static struct {
 #ifdef CS333_P3
   struct ptrs list[statecount];
 #endif // CS333_P3
+#ifdef CS333_P4
+  struct ptrs ready[MAXPRIO + 1];
+  uint promoteAtTime;
+#endif // CS333_P4
 } ptable;
 
 #ifdef CS333_P3
@@ -161,6 +165,12 @@ allocproc(void)
   p->start_ticks     = ticks;
   p->cpu_ticks_in    = 0;
   p->cpu_ticks_total = 0;
+
+#ifdef CS333_P4
+  p->priority = MAXPRIO;
+  p->budget   = DEFAULT_BUDGET;
+#endif //CS333_P4
+
   return p;
 }
 #else
@@ -231,6 +241,10 @@ userinit(void)
   initProcessLists();
   initFreeList();
   release(&ptable.lock);
+
+#ifdef CS333_P4
+  ptable.promoteAtTime = ticks + TICKS_TO_PROMOTE;
+#endif //CS333_P4
 
   if((p = allocproc()) == NULL)
     panic("userinit: Failed to allocate init process");
@@ -999,15 +1013,7 @@ procdumpP2(struct proc* p, const char* state)
 }
 #endif // CS333_P2
 
-#if defined(CS333_P4)
-// TODO for Project 4, define procdumpP4() here
-void
-procdumpP4(struct proc* p, const char* state)
-{
-  cprintf("\nprocdumpP3 Not yet implemented");
-}
-
-#elif defined(CS333_P3)
+#if defined(CS333_P3)
 
 static uint
 length(struct ptrs list)
@@ -1106,6 +1112,34 @@ procdumpP3(struct proc* p, const char* state)
   procdumpP2(p, state);
 }
 
+#endif //CS333_P3
+
+#if defined(CS333_P4)
+// TODO for Project 4, define procdumpP4() here
+void
+procdumpP4(struct proc* p, const char* state)
+{
+  // If parent is NULL - Set ppid to pid
+  int ppid = (p->parent) ? p->parent->pid : p->pid;
+
+  double cpu = p->cpu_ticks_total / 1000.0f;
+  double elapsed = (ticks - p->start_ticks) / 1000.0f;
+
+  char buf[32]; // 32 digits can more than hold any 32 bit number
+
+  dumpfield(itoa(p->pid, buf, 10), 8);
+  dumpfield(p->name, 13);
+  dumpfield(itoa(p->uid, buf, 10), 11);
+  dumpfield(itoa(p->gid, buf, 10), 8);
+  dumpfield(itoa(ppid, buf, 10), 8);
+  dumpfield(itoa(p->priority, buf, 10), 8);
+  dumpfield(dtoa(elapsed, buf, 3), 10);
+  dumpfield(dtoa(cpu, buf, 3), 6);
+  dumpfield(state, 8);
+  dumpfield(itoa(p->sz, buf, 10), 8);
+
+  return;
+}
 
 #elif defined(CS333_P1)
 // TODO for Project 1, define procdumpP1() here
@@ -1197,6 +1231,10 @@ getprocs(uint max, struct uproc* utable)
 
       uproc->elapsed_ticks   = ticks - p->start_ticks;
       uproc->cpu_ticks_total = p->cpu_ticks_total;
+
+#ifdef CS333_P4
+      uproc->priority = p->priority;
+#endif // CS333_P4
 
       safestrcpy(uproc->name, p->name, sizeof(uproc->name));
       safestrcpy(uproc->state, states[p->state], sizeof(uproc->state));

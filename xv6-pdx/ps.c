@@ -34,6 +34,9 @@ procdump(struct uproc* p)
   dumpfield(itoa(p->uid, buf, 10), 11);
   dumpfield(itoa(p->gid, buf, 10), 8);
   dumpfield(itoa(p->ppid, buf, 10), 8);
+#ifdef CS333_P4
+  dumpfield(itoa(p->priority, buf, 10), 8);
+#endif // CS333_P4
   dumpfield(dtoa(elapsed, buf, 3), 10);
   dumpfield(dtoa(cpu, buf, 3), 6);
   dumpfield(p->state, 8);
@@ -46,7 +49,12 @@ procdump(struct uproc* p)
 static void
 ps(int max)
 {
+
+#if defined(CS333_P4)
+#define HEADER "\nPID\tName         UID\tGID\tPPID\tPrio\tElapsed\t  CPU\tState\tSize\n"
+#else
 #define HEADER "\nPID\tName         UID\tGID\tPPID\tElapsed\t  CPU\tState\tSize\n"
+#endif 
 
   typedef struct uproc uproc;
 
