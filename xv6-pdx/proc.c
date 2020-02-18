@@ -474,6 +474,17 @@ exit(void)
       }
     }), ptable.list[state].head);
   }
+#ifdef CS333_P4
+  // Search ready list
+  for(int i = 0; i <= MAXPRIO; ++i)
+  {
+    map( LAMBDA(void _(struct proc* p){
+      if(p->parent == curproc){
+        p->parent = initproc;
+      }
+    }), ptable.ready[i].head);
+  }
+#endif // CS333_P4
 
   transition(RUNNING, ZOMBIE, curproc);
 
@@ -549,8 +560,7 @@ wait(void)
     // Search for children in all state lists except for UNUSED
     for(enum procstate state = EMBRYO; state <= ZOMBIE; ++state)
     {
-      p = ptable.list[state].head;
-      while(p != NULL)
+      for(p = ptable.list[state].head; p != NULL; p = p->next)
       {
         if(p->parent == curproc) 
         { 
@@ -567,14 +577,27 @@ wait(void)
             p->killed = 0;
 
             transition(ZOMBIE, UNUSED, p);
-
             release(&ptable.lock);
             return pid;
           }
         }
-        p = p->next;
       }
     }
+#ifdef CS333_P4
+  // Search ready list
+  for(int i = 0; i <= MAXPRIO; ++i)
+  {
+    for(p = ptable.ready[i].head; p != NULL; p = p->next)
+    {
+      if(p->parent == curproc) 
+      { 
+        havekids = 1;
+        // No need for zombie check since we're only checking ready list
+      }
+    }
+  }
+#endif //CS333_P4
+
     // No point waiting if we don't have any children.
     if(!havekids || curproc->killed){
       release(&ptable.lock);
@@ -638,7 +661,51 @@ wait(void)
 //  - swtch to start running that process
 //  - eventually that process transfers control
 //      via swtch back to the scheduler.
-#ifdef CS333_P3
+#if defined(CS333_P4)
+void
+scheduler(void)
+{
+  struct proc *p;
+  struct cpu *c = mycpu();
+  c->proc = 0;
+  int idle;  // for checking if processor is idle
+
+  for(;;){
+    // Enable interrupts on this processor.
+    sti();
+
+    idle = 1;  // assume idle unless we schedule a process
+
+    acquire(&ptable.lock);
+    for(int i = 0; i <= MAXPRIO && !(p = ptable.ready[i].head); ++i);
+
+    if(p != NULL) {
+
+      idle = 0;  // not idle this timeslice
+
+      c->proc = p;
+      switchuvm(p);
+
+      transition(RUNNABLE, RUNNING, p);
+
+      p->cpu_ticks_in = ticks;
+      swtch(&(c->scheduler), p->context);
+      switchkvm();
+
+      // Process is done running for now.
+      // It should have changed its p->state before coming back.
+      c->proc = 0;
+    }
+    release(&ptable.lock);
+
+    // if idle, wait for next interrupt
+    if (idle) {
+      sti();
+      hlt();
+    }
+  }
+}
+#elif defined(CS333_P3)
 // CS333_P3 assumes PDX_XV6 is also defined. No need to clutter
 // the code with extra ifdef PDX_XV6 checks
 void
@@ -930,8 +997,7 @@ kill(int pid)
   acquire(&ptable.lock);
   for(enum procstate state = EMBRYO; state <= ZOMBIE; ++state)
   {
-    p = ptable.list[state].head;
-    while(p != NULL)
+    for(p = ptable.list[state].head; p != NULL; p = p->next)
     {
       if(p->pid == pid){
         p->killed = 1;
@@ -941,9 +1007,25 @@ kill(int pid)
         release(&ptable.lock);
         return 0;
       }
-      p = p->next;
     }
   }
+#ifdef CS333_P4
+// Search Ready List
+  for(int i = 0; i <= MAXPRIO; ++i)
+  {
+    for(p = ptable.ready[i].head; p != NULL; p = p->next)
+    {
+      if(p->pid == pid){
+        p->killed = 1;
+        // Wake process from sleep if necessary.
+        if(p->state == SLEEPING)
+          transition(SLEEPING, RUNNABLE, p);
+        release(&ptable.lock);
+        return 0;
+      }
+    }
+  }
+#endif //CS333_P4
   release(&ptable.lock);
   return -1;
 }
@@ -1031,25 +1113,50 @@ length(struct ptrs list)
 }
 
 static void
-dumpList(struct ptrs list, int showPPID)
+dumpList(struct ptrs list, void (*info)(struct proc*))
 {
-  // Assign info function depending on if we're displaying PPID or not
-  void (*info)(struct proc*) = (showPPID) ? 
-    LAMBDA(void _(struct proc* p){
-
-      uint ppid = (p->parent) ? p->parent->pid : p->pid;
-
-      (p->next) ? cprintf("(%d, %d) -> ", p->pid, ppid) : cprintf("(%d, %d)", p->pid, ppid);
-    }) :
-    LAMBDA(void _(struct proc* p){
-      (p->next) ? cprintf("(%d) -> ", p->pid) : cprintf("(%d)", p->pid);
-    });
-
   acquire(&ptable.lock);
   map(info, list.head); // Apply info to each node in the list
   release(&ptable.lock);
 
   cputc('\n');
+}
+
+static void
+dumpReadyList()
+{
+#ifdef CS333_P4
+  for(int i = 0; i <= MAXPRIO; i++)
+  {
+    cprintf("\nPriority %d: ", i);
+    dumpList(ptable.ready[i], LAMBDA(void _(struct proc* p){
+      (p->next) ? cprintf("(%d, %d) -> ", p->pid, p->budget) 
+                : cprintf("(%d, %d)", p->pid, p->budget);
+    }));
+  }
+#else
+  dumpList(ptable.list[RUNNABLE], LAMBDA(void _(struct proc* p){
+      (p->next) ? cprintf("(%d) -> ", p->pid) : cprintf("(%d)", p->pid);
+  }));
+#endif // CS333_P4
+}
+
+static void
+dumpSleepList()
+{
+  dumpList(ptable.list[SLEEPING], LAMBDA(void _(struct proc* p){
+      (p->next) ? cprintf("(%d) -> ", p->pid) : cprintf("(%d)", p->pid);
+  }));
+}
+
+static void
+dumpZombieList()
+{
+  dumpList(ptable.list[ZOMBIE], LAMBDA(void _(struct proc* p){
+      uint ppid = (p->parent) ? p->parent->pid : p->pid;
+
+      (p->next) ? cprintf("(%d, %d) -> ", p->pid, ppid) : cprintf("(%d, %d)", p->pid, ppid);
+  }));
 }
 
 static void
@@ -1084,15 +1191,15 @@ statelistdump(int state)
   {
     case RUNNABLE : 
       cprintf("\nReady List Processes:\n");
-      dumpList(ptable.list[RUNNABLE], 0);
+      dumpReadyList();
       break;
     case SLEEPING : 
       cprintf("\nSleep List Processes:\n");
-      dumpList(ptable.list[SLEEPING], 0);
+      dumpSleepList();
       break;
     case ZOMBIE :
       cprintf("\nZombie List Processes:\n");
-      dumpList(ptable.list[ZOMBIE], 1);
+      dumpZombieList();
       break;
     case UNUSED : 
       cprintf("\nFree List Size: %d\n", length(ptable.list[UNUSED]));
@@ -1390,17 +1497,33 @@ assertState(struct proc *p, enum procstate state, const char * func, int line)
 static void
 __transition(enum procstate A, enum procstate B, struct proc* p, const char* func, int line)
 {
-  if (stateListRemove(&ptable.list[A], p) == -1) {
+
+#ifdef CS333_P4
+  int rc = (A == RUNNABLE) ? stateListRemove(&ptable.ready[p->priority], p) 
+                           : stateListRemove(&ptable.list[A], p);
+#else
+  int rc = stateListRemove(&ptable.list[A], p);
+#endif // CS333_P4
+
+  if(rc == -1) {
     cprintf("\n__transition: Called from %s, line %d\n", func, line);
     panic("Error: Failed to remove process from state list in transition");
   }
-  // TODO these macros will only every display this function and line number
-  // We would like to have to display funciton and line number of calling function
+
   assertState(p, A, func, line);
   
   p->state = B;
 
+#ifdef CS333_P4
+  if(B == RUNNABLE) {
+    stateListAdd(&ptable.ready[p->priority], p);
+  }
+  else {
+    stateListAdd(&ptable.list[B], p);
+  }
+#else
   stateListAdd(&ptable.list[B], p);
+#endif // CS333_P4
 }
 
 static void
