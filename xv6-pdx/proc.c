@@ -1126,7 +1126,7 @@ static void
 dumpReadyList()
 {
 #ifdef CS333_P4
-  for(int i = 0; i <= MAXPRIO; i++)
+  for(int i = MAXPRIO; i >= 0; --i)
   {
     cprintf("\nPriority %d: ", i);
     dumpList(ptable.ready[i], LAMBDA(void _(struct proc* p){
@@ -1515,12 +1515,8 @@ __transition(enum procstate A, enum procstate B, struct proc* p, const char* fun
   p->state = B;
 
 #ifdef CS333_P4
-  if(B == RUNNABLE) {
-    stateListAdd(&ptable.ready[p->priority], p);
-  }
-  else {
-    stateListAdd(&ptable.list[B], p);
-  }
+  (B == RUNNABLE) ? stateListAdd(&ptable.ready[p->priority], p) 
+                  : stateListAdd(&ptable.list[B], p);
 #else
   stateListAdd(&ptable.list[B], p);
 #endif // CS333_P4
