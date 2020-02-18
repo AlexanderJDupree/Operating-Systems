@@ -63,7 +63,14 @@ static void __atom_transition(enum procstate, enum procstate, struct proc* p, co
 static void* foldr(void* (*f)(struct proc*, void*), void* acc, struct proc* list);
 static void* foldl(void* (*f)(void*, struct proc*), void* acc, struct proc* list);
 static void  map(void (*f)(struct proc*), struct proc* list);
-#endif
+#endif // CS333_P3
+
+#ifdef CS333_P4
+
+static void promote_all_procs(int levels);
+static void adjust_priority(struct proc* p, int diff);
+
+#endif // CS333_P4
 
 static struct proc *initproc;
 
@@ -653,6 +660,7 @@ wait(void)
 }
 #endif // CS333_P3
 
+#if defined(CS333_P4)
 //PAGEBREAK: 42
 // Per-CPU process scheduler.
 // Each CPU calls scheduler() after setting itself up.
@@ -661,7 +669,6 @@ wait(void)
 //  - swtch to start running that process
 //  - eventually that process transfers control
 //      via swtch back to the scheduler.
-#if defined(CS333_P4)
 void
 scheduler(void)
 {
@@ -677,7 +684,15 @@ scheduler(void)
     idle = 1;  // assume idle unless we schedule a process
 
     acquire(&ptable.lock);
-    for(int i = 0; i <= MAXPRIO && !(p = ptable.ready[i].head); ++i);
+
+    if(ticks >= ptable.promoteAtTime)
+    {
+      promote_all_procs(1);
+      ptable.promoteAtTime = ticks + TICKS_TO_PROMOTE;
+    }
+
+    // Find Highest Priority process
+    for(int i = MAXPRIO; i >= 0 && !(p = ptable.ready[i].head); --i);
 
     if(p != NULL) {
 
@@ -827,8 +842,15 @@ sched(void)
     panic("sched interruptible");
 
 #ifdef CS333_P2
-  p->cpu_ticks_total += (ticks - p->cpu_ticks_in);
+  int elapsed = ticks - p->cpu_ticks_in;
+  p->cpu_ticks_total += elapsed;
 #endif // CS333_P2
+#ifdef CS333_P4
+  p->budget -= elapsed;
+
+  if(p->budget <= 0)
+    adjust_priority(p, -1);
+#endif // CS333_P4
 
   intena = mycpu()->intena;
   swtch(&p->context, mycpu()->scheduler);
@@ -1558,3 +1580,49 @@ map(void (*f)(struct proc*), struct proc* list)
 }
 
 #endif // CS333_P3
+
+#ifdef CS333_P4
+
+// PRECONDITION - Assumes ptable lock is held by the callee
+static void
+adjust_priority(struct proc* p, int diff)
+{
+  int new_priority = p->priority + diff;
+  if(new_priority > MAXPRIO || new_priority < 0) { return; }
+
+  if(p->state == RUNNABLE)
+  {
+    if(stateListRemove(&ptable.ready[p->priority], p) == -1)
+      panic("promote_proc: FATAL, failed to remove proc from state list");
+
+    stateListAdd(&ptable.ready[new_priority], p);
+  }
+  p->priority = new_priority;
+  p->budget   = DEFAULT_BUDGET;
+}
+
+// PRECONDITION - Assumes ptable lock is held by the callee
+static void
+promote_all_procs(int levels)
+{
+  if(levels > MAXPRIO) { return; }
+
+  for(int i = MAXPRIO - levels; i >= 0; --i)
+  {
+    map(LAMBDA(void _(struct proc* p){
+      adjust_priority(p, levels);
+    }), ptable.ready[i].head);
+  }
+
+  // Promote sleeping list
+  map(LAMBDA(void _(struct proc* p){
+    adjust_priority(p, levels);
+  }), ptable.ready[SLEEPING].head);
+
+  // Promote Running list
+  map(LAMBDA(void _(struct proc* p){
+    adjust_priority(p, levels);
+  }), ptable.ready[RUNNING].head);
+}
+
+#endif // CS333_P4;

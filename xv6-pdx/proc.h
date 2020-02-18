@@ -63,7 +63,7 @@ struct proc {
 #endif // CS333_P3
 #ifdef CS333_P4
   int budget;                  // Remaining CPU ticks budget
-  int priority;                // Process Priority 
+  uint priority;               // Process Priority 
 #endif // CS333_P4
 };
 
