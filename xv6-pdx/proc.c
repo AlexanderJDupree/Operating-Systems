@@ -67,7 +67,7 @@ static void  map(void (*f)(struct proc*), struct proc* list);
 
 #ifdef CS333_P4
 
-static void promote_all_procs(int levels);
+static void promote_all_procs(uint levels);
 static void adjust_priority(struct proc* p, int diff);
 
 #endif // CS333_P4
@@ -1588,12 +1588,14 @@ static void
 adjust_priority(struct proc* p, int diff)
 {
   int new_priority = p->priority + diff;
+  
+  // Don't set illegal priority
   if(new_priority > MAXPRIO || new_priority < 0) { return; }
 
-  if(p->state == RUNNABLE)
+  if(p->state == RUNNABLE) // Update MLFQ ready lists
   {
     if(stateListRemove(&ptable.ready[p->priority], p) == -1)
-      panic("promote_proc: FATAL, failed to remove proc from state list");
+      panic("adjust_priority: FATAL, failed to remove proc from state list");
 
     stateListAdd(&ptable.ready[new_priority], p);
   }
@@ -1603,7 +1605,7 @@ adjust_priority(struct proc* p, int diff)
 
 // PRECONDITION - Assumes ptable lock is held by the callee
 static void
-promote_all_procs(int levels)
+promote_all_procs(uint levels)
 {
   if(levels > MAXPRIO) { return; }
 
