@@ -134,6 +134,11 @@ int             setgid(struct proc*, uint);
 #ifdef CS333_P3
 void            statelistdump(int state);
 #endif // CS333_P3
+#ifdef CS333_P4
+int setpriority(uint pid, uint priority);
+int getpriority(uint pid);
+#endif // CS333_P4
+
 
 // swtch.S
 void            swtch(struct context**, struct context*);
