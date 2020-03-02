@@ -1627,4 +1627,55 @@ promote_all_procs(uint levels)
   }), ptable.ready[RUNNING].head);
 }
 
+// PRECONDITION - Assumes ptable lock is held by the callee
+static struct proc* 
+find_process(uint pid)
+{
+  struct proc* p;
+  for(enum procstate state = EMBRYO; state <= ZOMBIE; ++state)
+  {
+    for(p = ptable.list[state].head; p != NULL; p = p->next)
+    {
+      if(p->pid == pid)
+        return p;
+    }
+  }
+#ifdef CS333_P4
+  // Search Ready List
+  for(int i = 0; i <= MAXPRIO; ++i)
+  {
+    for(p = ptable.ready[i].head; p != NULL; p = p->next)
+    {
+      if(p->pid == pid)
+        return p;
+    }
+  }
+#endif //CS333_P4
+  return NULL;
+}
+
+int 
+setpriority(uint pid, uint priority)
+{
+  if(priority <= MAXPRIO)
+  {
+    acquire(&ptable.lock);
+    struct proc* p = find_process(pid);
+    adjust_priority(p, priority - p->priority);
+    release(&ptable.lock);
+    return 0; // Success
+  }
+  return -1;
+}
+
+int
+getpriority(uint pid)
+{
+  acquire(&ptable.lock);
+  struct proc* p = find_process(pid);
+  release(&ptable.lock);
+
+  return (p != NULL) ? p->priority : -1;
+}
+
 #endif // CS333_P4;
