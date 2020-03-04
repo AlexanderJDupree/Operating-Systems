@@ -63,6 +63,7 @@ static void __atom_transition(enum procstate, enum procstate, struct proc* p, co
 static void* foldr(void* (*f)(struct proc*, void*), void* acc, struct proc* list);
 static void* foldl(void* (*f)(void*, struct proc*), void* acc, struct proc* list);
 static void  map(void (*f)(struct proc*), struct proc* list);
+static struct proc* find_if(int (*f)(struct proc*));
 #endif // CS333_P3
 
 #ifdef CS333_P4
@@ -556,54 +557,36 @@ exit(void)
 int
 wait(void)
 {
-  struct proc *p;
-  struct proc *curproc = myproc();
   uint pid = 0;
   int havekids = 0;
+  struct proc *curproc = myproc();
 
   acquire(&ptable.lock);
   for(;;){
 
-    // Search for children in all state lists except for UNUSED
-    for(enum procstate state = EMBRYO; state <= ZOMBIE; ++state)
-    {
-      for(p = ptable.list[state].head; p != NULL; p = p->next)
-      {
-        if(p->parent == curproc) 
-        { 
-          havekids = 1;
-          if(p->state == ZOMBIE) // Reap child
-          {
-            pid = p->pid;
-            kfree(p->kstack);
-            p->kstack = 0;
-            freevm(p->pgdir);
-            p->pid = 0;
-            p->parent = 0;
-            p->name[0] = 0;
-            p->killed = 0;
+    struct proc* child = find_if( LAMBDA(int _(struct proc* p){
+      return (p->parent == curproc) ? 1 : 0;
+    }));
 
-            transition(ZOMBIE, UNUSED, p);
-            release(&ptable.lock);
-            return pid;
-          }
-        }
-      }
-    }
-#ifdef CS333_P4
-  // Search ready list
-  for(int i = 0; i <= MAXPRIO; ++i)
-  {
-    for(p = ptable.ready[i].head; p != NULL; p = p->next)
+    if(child != NULL)
     {
-      if(p->parent == curproc) 
-      { 
-        havekids = 1;
-        // No need for zombie check since we're only checking ready list
+      havekids = 1;
+      if(child->state == ZOMBIE) // Reap child
+      {
+        pid = child->pid;
+        kfree(child->kstack);
+        child->kstack = 0;
+        freevm(child->pgdir);
+        child->pid = 0;
+        child->parent = 0;
+        child->name[0] = 0;
+        child->killed = 0;
+
+        transition(ZOMBIE, UNUSED, child);
+        release(&ptable.lock);
+        return pid;
       }
     }
-  }
-#endif //CS333_P4
 
     // No point waiting if we don't have any children.
     if(!havekids || curproc->killed){
@@ -1014,40 +997,22 @@ wakeup(void *chan)
 int
 kill(int pid)
 {
-  struct proc *p;
-
   acquire(&ptable.lock);
-  for(enum procstate state = EMBRYO; state <= ZOMBIE; ++state)
+  struct proc* process = find_if( LAMBDA(int _(struct proc* p){
+    return (p->pid == pid) ? 1 : 0;
+  }));
+
+  if(process != NULL)
   {
-    for(p = ptable.list[state].head; p != NULL; p = p->next)
-    {
-      if(p->pid == pid){
-        p->killed = 1;
-        // Wake process from sleep if necessary.
-        if(p->state == SLEEPING)
-          transition(SLEEPING, RUNNABLE, p);
-        release(&ptable.lock);
-        return 0;
-      }
-    }
+    process->killed = 1;
+
+    // Wake process from sleep if necessary.
+    if(process->state == SLEEPING)
+      transition(SLEEPING, RUNNABLE, process);
+
+    release(&ptable.lock);
+    return 0;
   }
-#ifdef CS333_P4
-// Search Ready List
-  for(int i = 0; i <= MAXPRIO; ++i)
-  {
-    for(p = ptable.ready[i].head; p != NULL; p = p->next)
-    {
-      if(p->pid == pid){
-        p->killed = 1;
-        // Wake process from sleep if necessary.
-        if(p->state == SLEEPING)
-          transition(SLEEPING, RUNNABLE, p);
-        release(&ptable.lock);
-        return 0;
-      }
-    }
-  }
-#endif //CS333_P4
   release(&ptable.lock);
   return -1;
 }
@@ -1579,6 +1544,33 @@ map(void (*f)(struct proc*), struct proc* list)
   }), NULL, list);
 }
 
+// PRECONDITION - Assumes ptable lock is held by the callee
+static struct proc* 
+find_if(int (*predicate)(struct proc*))
+{
+  struct proc* p;
+  for(enum procstate state = EMBRYO; state <= ZOMBIE; ++state)
+  {
+    for(p = ptable.list[state].head; p != NULL; p = p->next)
+    {
+      if(predicate(p))
+        return p;
+    }
+  }
+#ifdef CS333_P4
+  // Search Ready List
+  for(int i = 0; i <= MAXPRIO; ++i)
+  {
+    for(p = ptable.ready[i].head; p != NULL; p = p->next)
+    {
+      if(predicate(p))
+        return p;
+    }
+  }
+#endif //CS333_P4
+  return NULL;
+}
+
 #endif // CS333_P3
 
 #ifdef CS333_P4
@@ -1627,40 +1619,17 @@ promote_all_procs(uint levels)
   }), ptable.ready[RUNNING].head);
 }
 
-// PRECONDITION - Assumes ptable lock is held by the callee
-static struct proc* 
-find_process(uint pid)
-{
-  struct proc* p;
-  for(enum procstate state = EMBRYO; state <= ZOMBIE; ++state)
-  {
-    for(p = ptable.list[state].head; p != NULL; p = p->next)
-    {
-      if(p->pid == pid)
-        return p;
-    }
-  }
-#ifdef CS333_P4
-  // Search Ready List
-  for(int i = 0; i <= MAXPRIO; ++i)
-  {
-    for(p = ptable.ready[i].head; p != NULL; p = p->next)
-    {
-      if(p->pid == pid)
-        return p;
-    }
-  }
-#endif //CS333_P4
-  return NULL;
-}
-
 int 
 setpriority(uint pid, uint priority)
 {
   if(priority <= MAXPRIO)
   {
     acquire(&ptable.lock);
-    struct proc* p = find_process(pid);
+
+    struct proc* p = find_if(LAMBDA(int _(struct proc* p){
+      return (p->pid == pid) ? 1 : 0;
+    }));
+
     adjust_priority(p, priority - p->priority);
     release(&ptable.lock);
     return 0; // Success
@@ -1672,7 +1641,9 @@ int
 getpriority(uint pid)
 {
   acquire(&ptable.lock);
-  struct proc* p = find_process(pid);
+  struct proc* p = find_if(LAMBDA(int _(struct proc* p){
+    return (p->pid == pid) ? 1 : 0;
+  }));
   release(&ptable.lock);
 
   return (p != NULL) ? p->priority : -1;
