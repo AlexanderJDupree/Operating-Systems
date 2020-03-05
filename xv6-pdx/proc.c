@@ -829,9 +829,10 @@ sched(void)
   p->cpu_ticks_total += elapsed;
 #endif // CS333_P2
 #ifdef CS333_P4
-  p->budget -= elapsed;
+  // Prevent integer underflow
+  p->budget -= (p->budget != 0) ? elapsed : 0;
 
-  if(p->budget <= 0)
+  if(p->budget <= 0 && p->priority > 0)
     adjust_priority(p, -1);
 #endif // CS333_P4
 
@@ -1582,7 +1583,7 @@ adjust_priority(struct proc* p, int diff)
   int new_priority = p->priority + diff;
   
   // Don't set illegal priority
-  if(new_priority > MAXPRIO || new_priority < 0) { return; }
+  if(new_priority > MAXPRIO || new_priority < 0 || diff == 0) { return; }
 
   if(p->state == RUNNABLE) // Update MLFQ ready lists
   {

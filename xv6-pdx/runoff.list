@@ -103,3 +103,5 @@ p4-test.c
 # CS333 Additions
 uproc.h
 loopforever.c
+setpriority.c
+getpriority.c
