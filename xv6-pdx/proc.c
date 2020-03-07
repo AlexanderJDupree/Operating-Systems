@@ -1613,12 +1613,12 @@ promote_all_procs(uint levels)
   // Promote sleeping list
   map(LAMBDA(void _(struct proc* p){
     adjust_priority(p, levels);
-  }), ptable.ready[SLEEPING].head);
+  }), ptable.list[SLEEPING].head);
 
   // Promote Running list
   map(LAMBDA(void _(struct proc* p){
     adjust_priority(p, levels);
-  }), ptable.ready[RUNNING].head);
+  }), ptable.list[RUNNING].head);
 }
 
 int 
