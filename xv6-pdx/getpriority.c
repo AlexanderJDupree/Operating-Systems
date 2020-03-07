@@ -28,7 +28,7 @@ int main(int argc, char* argv[])
 
   if(rc >= 0)
   {
-    printf(1, "\nPID: %d, PRIORITY: %d\n", pid, rc);
+    printf(1, "PID: %d, PRIORITY: %d\n", pid, rc);
   }
   else
   {

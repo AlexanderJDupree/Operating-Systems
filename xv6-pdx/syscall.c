@@ -124,6 +124,7 @@ extern int sys_getprocs(void);
 #ifdef CS333_P4
 extern int sys_setpriority(void);
 extern int sys_getpriority(void);
+extern int sys_lowerbudget(void);
 #endif // CS333_P4
 
 static int (*syscalls[])(void) = {
@@ -164,7 +165,8 @@ static int (*syscalls[])(void) = {
 #endif // CS333_P2
 #ifdef CS333_P4
 [SYS_setpriority] sys_setpriority,
-[SYS_getpriority] sys_getpriority
+[SYS_getpriority] sys_getpriority,
+[SYS_lowerbudget] sys_lowerbudget
 #endif // CS333_P4
 };
 
@@ -207,7 +209,8 @@ static char *syscallnames[] = {
 #endif // CS333_P2
 #ifdef CS333_P4
 [SYS_setpriority] "setpriority",
-[SYS_getpriority] "getpriority"
+[SYS_getpriority] "getpriority",
+[SYS_lowerbudget] "lowerbudget"
 #endif // CS333_P4
 };
 #endif // PRINT_SYSCALLS
