@@ -137,6 +137,7 @@ void            statelistdump(int state);
 #ifdef CS333_P4
 int setpriority(uint pid, uint priority);
 int getpriority(uint pid);
+int lowerbudget(uint pid, int diff);
 #endif // CS333_P4
 
 

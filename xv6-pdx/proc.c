@@ -565,27 +565,28 @@ wait(void)
   for(;;){
 
     struct proc* child = find_if( LAMBDA(int _(struct proc* p){
-      return (p->parent == curproc) ? 1 : 0;
+      if(p->parent == curproc)
+      {
+        havekids = 1;
+        return p->state == ZOMBIE;
+      }
+      return 0;
     }));
 
-    if(child != NULL)
+    if(child != NULL) // Reap child
     {
-      havekids = 1;
-      if(child->state == ZOMBIE) // Reap child
-      {
-        pid = child->pid;
-        kfree(child->kstack);
-        child->kstack = 0;
-        freevm(child->pgdir);
-        child->pid = 0;
-        child->parent = 0;
-        child->name[0] = 0;
-        child->killed = 0;
+      pid = child->pid;
+      kfree(child->kstack);
+      child->kstack = 0;
+      freevm(child->pgdir);
+      child->pid = 0;
+      child->parent = 0;
+      child->name[0] = 0;
+      child->killed = 0;
 
-        transition(ZOMBIE, UNUSED, child);
-        release(&ptable.lock);
-        return pid;
-      }
+      transition(ZOMBIE, UNUSED, child);
+      release(&ptable.lock);
+      return pid;
     }
 
     // No point waiting if we don't have any children.
@@ -829,9 +830,10 @@ sched(void)
   p->cpu_ticks_total += elapsed;
 #endif // CS333_P2
 #ifdef CS333_P4
-  p->budget -= elapsed;
+  // Prevent integer underflow
+  p->budget -= (p->budget > 0) ? elapsed : 0;
 
-  if(p->budget <= 0)
+  if(p->budget <= 0 && p->priority > 0)
     adjust_priority(p, -1);
 #endif // CS333_P4
 
@@ -1582,7 +1584,7 @@ adjust_priority(struct proc* p, int diff)
   int new_priority = p->priority + diff;
   
   // Don't set illegal priority
-  if(new_priority > MAXPRIO || new_priority < 0) { return; }
+  if(new_priority > MAXPRIO || new_priority < 0 || diff == 0) { return; }
 
   if(p->state == RUNNABLE) // Update MLFQ ready lists
   {
@@ -1611,12 +1613,12 @@ promote_all_procs(uint levels)
   // Promote sleeping list
   map(LAMBDA(void _(struct proc* p){
     adjust_priority(p, levels);
-  }), ptable.ready[SLEEPING].head);
+  }), ptable.list[SLEEPING].head);
 
   // Promote Running list
   map(LAMBDA(void _(struct proc* p){
     adjust_priority(p, levels);
-  }), ptable.ready[RUNNING].head);
+  }), ptable.list[RUNNING].head);
 }
 
 int 
@@ -1647,6 +1649,30 @@ getpriority(uint pid)
   release(&ptable.lock);
 
   return (p != NULL) ? p->priority : -1;
+}
+
+int
+lowerbudget(uint pid, int diff)
+{
+  acquire(&ptable.lock);
+  struct proc* p = find_if(LAMBDA(int _(struct proc* p){
+    return (p->pid == pid) ? 1 : 0;
+  }));
+
+  if(p) 
+  { 
+    int new_budget = p->budget - diff;
+
+    // Prevent underflow
+    if(new_budget < p->budget) { p->budget = new_budget; }
+
+    if(p->budget <= 0 && p->priority > 0)
+      adjust_priority(p, -1);
+  }
+
+  release(&ptable.lock);
+
+  return (p != NULL) ? 0 : -1;
 }
 
 #endif // CS333_P4;

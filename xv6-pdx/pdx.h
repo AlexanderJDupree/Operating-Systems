@@ -42,8 +42,8 @@
 
 #ifdef CS333_P4
 #define MAXPRIO 6
-#define DEFAULT_BUDGET 100
-#define TICKS_TO_PROMOTE 1000
+#define DEFAULT_BUDGET 200
+#define TICKS_TO_PROMOTE 15000
 #endif //CS333_P4
 
 #endif  // PDX_INCLUDE

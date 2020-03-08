@@ -208,5 +208,16 @@ sys_getpriority(void)
 
   return getpriority(pid);
 }
-#endif // CS333_P4
 
+int
+sys_lowerbudget(void)
+{
+  int pid, diff;
+
+  if(argint(0, &pid) < 0 || argint(1, &diff) < 0)
+    return -1;
+
+  return lowerbudget(pid, diff);
+}
+
+#endif // CS333_P4

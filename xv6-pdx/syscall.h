@@ -31,3 +31,4 @@
 #define SYS_getprocs    SYS_setgid+1
 #define SYS_setpriority SYS_getprocs+1
 #define SYS_getpriority SYS_setpriority+1
+#define SYS_lowerbudget SYS_getpriority+1

@@ -15,6 +15,7 @@ main(int argc, char **argv)
     exit();
   }
   for(i=1; i<argc; i++)
-    kill(atoi(argv[i]));
+    if(kill(atoi(argv[i])) < 0) 
+      printf(2, "kill: ERROR, failed to kill PID: %s\n", argv[i]);
   exit();
 }

@@ -43,6 +43,7 @@ int getprocs(uint, struct uproc*);
 #ifdef CS333_P4
 int setpriority(int pid, int priority);
 int getpriority(int pid);
+int lowerbudget(int pid, int diff);
 #endif // CS333_P4
 
 // ulib.c
